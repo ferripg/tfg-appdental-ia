@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Ferran Paredes/Documents/AppDental/tfg-appdental-ia/**)",
+      "Read(//c/Users/Ferran Paredes/Documents/AppDental/tfg-appdental-ia/prisma/**)",
+      "Bash(robocopy \"C:\\\\Users\\\\Ferran Paredes\\\\Documents\\\\AppDental\\\\tfg-appdental-manual\" \"C:\\\\Users\\\\Ferran Paredes\\\\Documents\\\\AppDental\\\\tfg-appdental-ia\" /E /XD node_modules .next .git /XF .env /NFL /NDL /NJH /NJS)",
+      "Bash(echo \"robocopy exit code: $?\")",
+      "Bash(robocopy \"C:\\\\Users\\\\Ferran Paredes\\\\Documents\\\\AppDental\\\\tfg-appdental-manual\" \"C:\\\\Users\\\\Ferran Paredes\\\\Documents\\\\AppDental\\\\tfg-appdental-ia\" //E //XD node_modules .next .git //XF .env //NFL //NDL //NJH //NJS)"
+    ]
+  }
+}

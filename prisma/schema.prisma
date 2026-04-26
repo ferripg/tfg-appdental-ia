@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(VIEWER)
+  
+  accounts      Account[]
+  sessions      Session[]
+  despeses      Despesa[] 
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Proveidor {
+  id          String   @id @default(cuid())
+  nom         String
+  nif         String   @unique
+  actiu       Boolean  @default(true)
+  
+  despeses    Despesa[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TipusDespesa {
+  id          String   @id @default(cuid())
+  nom         String
+  descripcio  String?
+  actiu       Boolean  @default(true)
+  
+  despeses    Despesa[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Despesa {
+  id              String   @id @default(cuid())
+  concepte        String
+  import          Float
+  data            DateTime 
+  fitxerKey       String?  
+  
+  proveidorId     String
+  proveidor       Proveidor @relation(fields: [proveidorId], references: [id])
+  
+  tipusDespesaId  String
+  tipusDespesa    TipusDespesa @relation(fields: [tipusDespesaId], references: [id])
+  
+  userId          String
+  registratPer    User      @relation(fields: [userId], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
