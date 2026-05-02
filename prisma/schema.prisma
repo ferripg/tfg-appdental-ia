@@ -6,27 +6,46 @@ datasource db {
   provider = "postgresql"
 }
 
+// =============================================================================
+// AUTH (NextAuth.js v4 + Prisma Adapter)
+// =============================================================================
+
 enum Role {
-  ADMIN
-  MANAGER
-  VIEWER
+  ADMIN     // Tot, incloent gestió d'usuaris
+  MANAGER   // "Espavilat" — CRUD complet del domini, exports, amortitzacions
+  OPERARI   // "Normal" — només crear despeses i veure llistats
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          Role      @default(VIEWER)
-  
-  accounts      Account[]
-  sessions      Session[]
-  despeses      Despesa[] 
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String    @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  role                 Role      @default(OPERARI)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  // Camps per a autenticació (UC-1..UC-10 del bloc 01_AUTH)
+  actiu                Boolean   @default(true)
+  mustChangePassword   Boolean   @default(false)
+  failedLoginAttempts  Int       @default(0)
+  lockedUntil          DateTime?
+  lastLoginAt          DateTime?
+  passwordChangedAt    DateTime?
+
+  accounts             Account[]
+  sessions             Session[]
+  despeses             Despesa[]
+
+  // Inverses per a TancamentExercici (bloc 06)
+  tancaments           TancamentExercici[]
+  reobriments          TancamentExercici[]  @relation("ReobertPer")
+
+  // Inversa per a AuditLog (auditoria de tot el CRUD)
+  auditLogs            AuditLog[]
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model Account {
@@ -56,46 +75,178 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Proveidor {
-  id          String   @id @default(cuid())
-  nom         String
-  nif         String   @unique
-  actiu       Boolean  @default(true)
-  
-  despeses    Despesa[]
+// =============================================================================
+// DOMINI: Proveïdors i Tipus de Despesa (taules mestre)
+// =============================================================================
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Proveidor {
+  id              String   @id @default(cuid())
+  nif             String   @unique
+  nom             String
+  codiBis         String?
+  actiu           Boolean  @default(true)
+
+  // Camps de contacte i facturació (UC-22+, bloc 02)
+  adreca          String?
+  codiPostal      String?
+  poblacio        String?
+  email           String?
+  telefon         String?
+  personaContacte String?
+  iban            String?
+  notes           String?  @db.Text
+
+  despeses        Despesa[]
+  inventari       Inventari[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model TipusDespesa {
-  id          String   @id @default(cuid())
-  nom         String
-  descripcio  String?
-  actiu       Boolean  @default(true)
-  
-  despeses    Despesa[]
+  id              String   @id @default(cuid())
+  codi            String   @unique
+  descripcio      String
+  deduible        Boolean  @default(true)
+  grup            Int?
+  concepte        String?
+  esAmortitzable  Boolean  @default(false)
+  actiu           Boolean  @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  despeses        Despesa[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
+
+// =============================================================================
+// DOMINI: Despeses
+// =============================================================================
 
 model Despesa {
   id              String   @id @default(cuid())
-  concepte        String
-  import          Float
-  data            DateTime 
-  fitxerKey       String?  
-  
-  proveidorId     String
-  proveidor       Proveidor @relation(fields: [proveidorId], references: [id])
-  
+  dataFactura     DateTime
+  dataPagament    DateTime?
+  import          Decimal  @db.Decimal(12,2)
+  numFactura      String?
+  descripcio      String?
+  fitxerKey       String?
+
   tipusDespesaId  String
   tipusDespesa    TipusDespesa @relation(fields: [tipusDespesaId], references: [id])
-  
-  userId          String
-  registratPer    User      @relation(fields: [userId], references: [id])
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  proveidorId     String?
+  proveidor       Proveidor?   @relation(fields: [proveidorId], references: [id])
+
+  userId          String
+  registratPer    User         @relation(fields: [userId], references: [id])
+
+  inventari       Inventari?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// =============================================================================
+// DOMINI: Inventari i Amortitzacions
+// =============================================================================
+
+enum EstatInventari {
+  ACTIU
+  BAIXA
+  ELIMINAT
+}
+
+model Inventari {
+  id                  String   @id @default(cuid())
+  dataAdquisicio      DateTime
+  descripcio          String
+  importAdquisicio    Decimal  @db.Decimal(12,2)
+  importAmortitzat    Decimal  @db.Decimal(12,2) @default(0)
+  percAmortitzacio    Decimal  @db.Decimal(5,2)
+  importUltimaAmort   Decimal? @db.Decimal(12,2)
+  numFactura          String?
+  estat               EstatInventari @default(ACTIU)
+  anyBaixa            Int?
+
+  proveidorId         String?
+  proveidor           Proveidor? @relation(fields: [proveidorId], references: [id])
+
+  despesaId           String?    @unique
+  despesa             Despesa?   @relation(fields: [despesaId], references: [id])
+
+  amortitzacions      Amortitzacio[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Amortitzacio {
+  inventariId   String
+  inventari     Inventari @relation(fields: [inventariId], references: [id], onDelete: Cascade)
+  exercici      Int
+  import        Decimal   @db.Decimal(12,2)
+
+  createdAt     DateTime  @default(now())
+
+  @@id([inventariId, exercici])
+}
+
+// =============================================================================
+// TANCAMENT FISCAL
+// =============================================================================
+
+model TancamentExercici {
+  exercici        Int       @id
+  dataTancament   DateTime  @default(now())
+  tancatPerId     String
+  tancatPer       User      @relation(fields: [tancatPerId], references: [id])
+
+  dataReobertura  DateTime?
+  reobertPerId    String?
+  reobertPer      User?     @relation("ReobertPer", fields: [reobertPerId], references: [id])
+
+  notes           String?   @db.Text
+}
+
+// =============================================================================
+// AUDITORIA — Log de totes les operacions CRUD i esdeveniments de seguretat
+// =============================================================================
+
+enum AccioAudit {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN_OK
+  LOGIN_FAIL
+  LOGOUT
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  USER_BLOCKED
+  USER_UNBLOCKED
+  ROLE_CHANGED
+  EXERCICI_TANCAT
+  EXERCICI_REOBERT
+  AMORTITZACIONS_GENERATED
+  AMORTITZACIONS_RETROCEDIDES
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  timestamp   DateTime    @default(now())
+
+  // null si l'acció és del sistema o si és un LOGIN_FAIL amb email desconegut
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  accio       AccioAudit
+  entitat     String?     // "Despesa", "Proveidor", "User", etc. (null per esdeveniments d'auth)
+  entitatId   String?     // id del registre afectat
+  canvis      Json?       // diff vell→nou per a UPDATE
+  ip          String?     // per a esdeveniments d'auth
+  metadata    Json?       // info addicional (motiu, context, etc.)
+
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@index([entitat, entitatId])
 }
