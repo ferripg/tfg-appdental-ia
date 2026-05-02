@@ -31,7 +31,7 @@ Per assegurar que el PostgreSQL verge de Docker entén els taules mèdiques i pe
 
 ```bash
 npm install
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 ### 4. Accés als Serveis Locals
