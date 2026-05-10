@@ -1,2 +1,2 @@
-// Stub — Auth service (login, password hash/verify, lockout policy). Implementation lands in IA-2.
+// Stub — Auth service (custom lockout policy, mustChangePassword, audit hooks). Implementation lands in Sprint 2.
 export {};
