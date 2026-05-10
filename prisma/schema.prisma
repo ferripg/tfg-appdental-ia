@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,72 +8,87 @@ datasource db {
 }
 
 // =============================================================================
-// AUTH (Auth.js v5 + Prisma Adapter)
+// AUTH (Better Auth + Prisma Adapter)
 // =============================================================================
 
 enum Role {
-  ADMIN     // Tot, incloent gestió d'usuaris
-  MANAGER   // "Espavilat" — CRUD complet del domini, exports, amortitzacions
-  OPERARI   // "Normal" — només crear despeses i veure llistats
+  ADMIN // Tot, incloent gestió d'usuaris
+  MANAGER // "Espavilat" — CRUD complet del domini, exports, amortitzacions
+  OPERARI // "Normal" — només crear despeses i veure llistats
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  name                 String?
-  email                String    @unique
-  emailVerified        DateTime?
-  image                String?
-  password             String?
-  role                 Role      @default(OPERARI)
+  id            String  @id @default(cuid())
+  name          String?
+  email         String  @unique
+  emailVerified Boolean @default(false)
+  image         String?
+  role          Role    @default(OPERARI)
 
-  // Camps per a autenticació (UC-1..UC-10 del bloc 01_AUTH)
-  actiu                Boolean   @default(true)
-  mustChangePassword   Boolean   @default(false)
-  failedLoginAttempts  Int       @default(0)
-  lockedUntil          DateTime?
-  lastLoginAt          DateTime?
-  passwordChangedAt    DateTime?
+  // Camps custom d'autenticació (no part de Better Auth, gestionats per la nostra lògica)
+  actiu               Boolean   @default(true)
+  mustChangePassword  Boolean   @default(false)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
 
-  accounts             Account[]
-  sessions             Session[]
-  despeses             Despesa[]
+  accounts Account[]
+  sessions Session[]
+  despeses Despesa[]
 
-  // Inverses per a TancamentExercici (bloc 06)
-  tancaments           TancamentExercici[]
-  reobriments          TancamentExercici[]  @relation("ReobertPer")
+  // Inverses per a TancamentExercici
+  tancaments  TancamentExercici[]
+  reobriments TancamentExercici[] @relation("ReobertPer")
 
   // Inversa per a AuditLog (auditoria de tot el CRUD)
-  auditLogs            AuditLog[]
+  auditLogs AuditLog[]
 
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
 }
 
+// El password de l'usuari viu aquí (camp `password`), no a User.
+// providerId = mètode d'autenticació ("credential" per email/password, "google" per OAuth, etc.)
+// Cada usuari pot tenir múltiples Account (un per cada mètode amb què s'ha registrat).
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("account")
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
 }
 
 // =============================================================================
@@ -80,11 +96,11 @@ model Session {
 // =============================================================================
 
 model Proveidor {
-  id              String   @id @default(cuid())
-  nif             String   @unique
-  nom             String
-  codiBis         String?
-  actiu           Boolean  @default(true)
+  id      String  @id @default(cuid())
+  nif     String  @unique
+  nom     String
+  codiBis String?
+  actiu   Boolean @default(true)
 
   // Camps de contacte i facturació (UC-22+, bloc 02)
   adreca          String?
@@ -94,29 +110,29 @@ model Proveidor {
   telefon         String?
   personaContacte String?
   iban            String?
-  notes           String?  @db.Text
+  notes           String? @db.Text
 
-  despeses        Despesa[]
-  inventari       Inventari[]
+  despeses  Despesa[]
+  inventari Inventari[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TipusDespesa {
-  id              String   @id @default(cuid())
-  codi            String   @unique
-  descripcio      String
-  deduible        Boolean  @default(true)
-  grup            Int?
-  concepte        String?
-  esAmortitzable  Boolean  @default(false)
-  actiu           Boolean  @default(true)
+  id             String  @id @default(cuid())
+  codi           String  @unique
+  descripcio     String
+  deduible       Boolean @default(true)
+  grup           Int?
+  concepte       String?
+  esAmortitzable Boolean @default(false)
+  actiu          Boolean @default(true)
 
-  despeses        Despesa[]
+  despeses Despesa[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // =============================================================================
@@ -124,27 +140,27 @@ model TipusDespesa {
 // =============================================================================
 
 model Despesa {
-  id              String   @id @default(cuid())
-  dataFactura     DateTime
-  dataPagament    DateTime?
-  import          Decimal  @db.Decimal(12,2)
-  numFactura      String?
-  descripcio      String?
-  fitxerKey       String?
+  id           String    @id @default(cuid())
+  dataFactura  DateTime
+  dataPagament DateTime?
+  import       Decimal   @db.Decimal(12, 2)
+  numFactura   String?
+  descripcio   String?
+  fitxerKey    String?
 
-  tipusDespesaId  String
-  tipusDespesa    TipusDespesa @relation(fields: [tipusDespesaId], references: [id])
+  tipusDespesaId String
+  tipusDespesa   TipusDespesa @relation(fields: [tipusDespesaId], references: [id])
 
-  proveidorId     String?
-  proveidor       Proveidor?   @relation(fields: [proveidorId], references: [id])
+  proveidorId String?
+  proveidor   Proveidor? @relation(fields: [proveidorId], references: [id])
 
-  userId          String
-  registratPer    User         @relation(fields: [userId], references: [id])
+  userId       String
+  registratPer User   @relation(fields: [userId], references: [id])
 
-  inventari       Inventari?
+  inventari Inventari?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // =============================================================================
@@ -158,36 +174,36 @@ enum EstatInventari {
 }
 
 model Inventari {
-  id                  String   @id @default(cuid())
-  dataAdquisicio      DateTime
-  descripcio          String
-  importAdquisicio    Decimal  @db.Decimal(12,2)
-  importAmortitzat    Decimal  @db.Decimal(12,2) @default(0)
-  percAmortitzacio    Decimal  @db.Decimal(5,2)
-  importUltimaAmort   Decimal? @db.Decimal(12,2)
-  numFactura          String?
-  estat               EstatInventari @default(ACTIU)
-  anyBaixa            Int?
+  id                String         @id @default(cuid())
+  dataAdquisicio    DateTime
+  descripcio        String
+  importAdquisicio  Decimal        @db.Decimal(12, 2)
+  importAmortitzat  Decimal        @db.Decimal(12, 2) @default(0)
+  percAmortitzacio  Decimal        @db.Decimal(5, 2)
+  importUltimaAmort Decimal?       @db.Decimal(12, 2)
+  numFactura        String?
+  estat             EstatInventari @default(ACTIU)
+  anyBaixa          Int?
 
-  proveidorId         String?
-  proveidor           Proveidor? @relation(fields: [proveidorId], references: [id])
+  proveidorId String?
+  proveidor   Proveidor? @relation(fields: [proveidorId], references: [id])
 
-  despesaId           String?    @unique
-  despesa             Despesa?   @relation(fields: [despesaId], references: [id])
+  despesaId String?  @unique
+  despesa   Despesa? @relation(fields: [despesaId], references: [id])
 
-  amortitzacions      Amortitzacio[]
+  amortitzacions Amortitzacio[]
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Amortitzacio {
-  inventariId   String
-  inventari     Inventari @relation(fields: [inventariId], references: [id], onDelete: Cascade)
-  exercici      Int
-  import        Decimal   @db.Decimal(12,2)
+  inventariId String
+  inventari   Inventari @relation(fields: [inventariId], references: [id], onDelete: Cascade)
+  exercici    Int
+  import      Decimal   @db.Decimal(12, 2)
 
-  createdAt     DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@id([inventariId, exercici])
 }
@@ -197,16 +213,16 @@ model Amortitzacio {
 // =============================================================================
 
 model TancamentExercici {
-  exercici        Int       @id
-  dataTancament   DateTime  @default(now())
-  tancatPerId     String
-  tancatPer       User      @relation(fields: [tancatPerId], references: [id])
+  exercici      Int      @id
+  dataTancament DateTime @default(now())
+  tancatPerId   String
+  tancatPer     User     @relation(fields: [tancatPerId], references: [id])
 
-  dataReobertura  DateTime?
-  reobertPerId    String?
-  reobertPer      User?     @relation("ReobertPer", fields: [reobertPerId], references: [id])
+  dataReobertura DateTime?
+  reobertPerId   String?
+  reobertPer     User?     @relation("ReobertPer", fields: [reobertPerId], references: [id])
 
-  notes           String?   @db.Text
+  notes String? @db.Text
 }
 
 // =============================================================================
@@ -232,21 +248,33 @@ enum AccioAudit {
 }
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  timestamp   DateTime    @default(now())
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
 
   // null si l'acció és del sistema o si és un LOGIN_FAIL amb email desconegut
-  userId      String?
-  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  accio       AccioAudit
-  entitat     String?     // "Despesa", "Proveidor", "User", etc. (null per esdeveniments d'auth)
-  entitatId   String?     // id del registre afectat
-  canvis      Json?       // diff vell→nou per a UPDATE
-  ip          String?     // per a esdeveniments d'auth
-  metadata    Json?       // info addicional (motiu, context, etc.)
+  accio     AccioAudit
+  entitat   String? // "Despesa", "Proveidor", "User", etc. (null per esdeveniments d'auth)
+  entitatId String? // id del registre afectat
+  canvis    Json? // diff vell→nou per a UPDATE
+  ip        String? // per a esdeveniments d'auth
+  metadata  Json? // info addicional (motiu, context, etc.)
 
   @@index([timestamp])
   @@index([userId, timestamp])
   @@index([entitat, entitatId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
