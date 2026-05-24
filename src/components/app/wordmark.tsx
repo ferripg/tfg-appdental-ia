@@ -16,7 +16,7 @@ export function Wordmark({ className, size = "md" }: WordmarkProps) {
   return (
     <span
       className={cn(
-        "font-serif font-normal italic leading-none tracking-tight",
+        "font-serif font-normal italic leading-none",
         sizeMap[size],
         className,
       )}

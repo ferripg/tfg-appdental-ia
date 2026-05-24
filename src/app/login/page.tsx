@@ -53,7 +53,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative max-w-md space-y-6">
-          <p className="font-serif text-5xl leading-[1.05] tracking-tight text-foreground">
+          <p className="font-serif text-5xl leading-[1.18] text-foreground">
             Gestió interna per a clíniques dentals.
           </p>
           <p className="text-sm text-muted-foreground">

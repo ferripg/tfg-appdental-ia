@@ -77,11 +77,18 @@ export function Header({ user }: { user: SessionUser }) {
         <div className="ml-auto flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
+              {/*
+                suppressHydrationWarning: Radix DropdownMenu injecta
+                aria-controls/aria-expanded/data-state al trigger durant la
+                hidratació; un Server Component pare provoca un mismatch
+                inofensiu però soroll als logs.
+              */}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-9 gap-2 px-2"
                 aria-label="Menú d'usuari"
+                suppressHydrationWarning
               >
                 <Avatar size="sm">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">

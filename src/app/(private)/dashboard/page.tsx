@@ -50,7 +50,7 @@ export default async function DashboardPage() {
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
           Visió general
         </p>
-        <h1 className="text-4xl tracking-tight md:text-5xl">Tauler</h1>
+        <h1 className="text-4xl leading-tight md:text-5xl">Tauler</h1>
         <p className="max-w-2xl text-muted-foreground">
           Activitat resumida de la clínica. Les xifres reals s&apos;activaran
           a mesura que entrin els mòduls de despeses, proveïdors i inventari.
