@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
 import { Header } from "./_components/header";
 
@@ -15,6 +16,7 @@ export default async function PrivateLayout({
       <main className="container mx-auto w-full max-w-6xl flex-1 px-6 py-10">
         {children}
       </main>
+      <Toaster position="top-right" closeButton richColors />
     </div>
   );
 }

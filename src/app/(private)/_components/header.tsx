@@ -1,5 +1,6 @@
 import { ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
+import { NavItem } from "@/components/app/nav-item";
 import { Wordmark } from "@/components/app/wordmark";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,22 +20,24 @@ type SessionUser = {
   role?: string | null;
 };
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { label: string; href: string; disabled?: boolean }[] = [
   { label: "Tauler", href: "/dashboard" },
-  { label: "Despeses", href: "#" },
-  { label: "Proveïdors", href: "#" },
-  { label: "Inventari", href: "#" },
-  { label: "Reports", href: "#" },
-] as const;
+  { label: "Despeses", href: "#", disabled: true },
+  { label: "Proveïdors", href: "/proveidors" },
+  { label: "Inventari", href: "#", disabled: true },
+  { label: "Reports", href: "#", disabled: true },
+];
 
 function initials(user: SessionUser): string {
   const source = user.name?.trim() || user.email;
-  return source
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "·";
+  return (
+    source
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "·"
+  );
 }
 
 export function Header({ user }: { user: SessionUser }) {
@@ -46,32 +49,9 @@ export function Header({ user }: { user: SessionUser }) {
         </Link>
 
         <nav className="hidden flex-1 items-center gap-1 md:flex">
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.href === "/dashboard";
-            const isDisabled = item.href === "#";
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                aria-disabled={isDisabled}
-                tabIndex={isDisabled ? -1 : 0}
-                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                  isActive
-                    ? "bg-secondary text-secondary-foreground"
-                    : isDisabled
-                      ? "text-muted-foreground/60 pointer-events-none"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {item.label}
-                {isDisabled && (
-                  <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                    aviat
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {NAV_ITEMS.map((item) => (
+            <NavItem key={item.label} {...item} />
+          ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
