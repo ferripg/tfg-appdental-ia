@@ -32,7 +32,7 @@ export async function updateTipusDespesaAction(
 
   revalidatePath("/tipus-despesa");
   revalidatePath(`/tipus-despesa/${id}`);
-  redirect(`/tipus-despesa/${id}?msg=actualitzat`);
+  redirect(`/tipus-despesa?msg=actualitzat`);
 }
 
 export async function setActiuAction(

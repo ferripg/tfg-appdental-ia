@@ -30,7 +30,7 @@ export async function updateProveidorAction(
 
   revalidatePath("/proveidors");
   revalidatePath(`/proveidors/${id}`);
-  redirect(`/proveidors/${id}?msg=actualitzat`);
+  redirect(`/proveidors?msg=actualitzat`);
 }
 
 export async function setActiuAction(
