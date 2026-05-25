@@ -68,6 +68,17 @@ export default async function TipusDespesaDetailPage({
         </p>
       </div>
 
+      {tipus.concepte && (
+        <section className="space-y-2 rounded-lg border border-border bg-accent/30 p-5">
+          <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Concepte
+          </h2>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+            {tipus.concepte}
+          </p>
+        </section>
+      )}
+
       <TipusDespesaForm
         action={updateAction}
         defaults={{

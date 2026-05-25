@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export type TipusDespesaFormState = {
@@ -147,13 +148,20 @@ export function TipusDespesaForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="concepte">Concepte (opcional)</Label>
-            <Input
+            <Label htmlFor="concepte">Concepte (descripció extensa, opcional)</Label>
+            <Textarea
               id="concepte"
               name="concepte"
+              rows={4}
               defaultValue={defaults.concepte}
-              placeholder="Despeses corrents · Subministraments"
+              placeholder="Explicació detallada del tipus: criteris d'aplicació, exemples concrets, notes per a la persona que registra la despesa…"
+              className={cn(fe.concepte && "border-destructive")}
+              aria-invalid={!!fe.concepte}
             />
+            <p className="text-xs text-muted-foreground">
+              Text llarg per documentar quan i com aplicar aquest tipus
+              (visible només a la fitxa).
+            </p>
             <FieldError messages={fe.concepte} />
           </div>
 

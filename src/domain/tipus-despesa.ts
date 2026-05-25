@@ -45,7 +45,7 @@ export const tipusDespesaInputSchema = z.object({
   esAmortitzable: z.boolean(),
   actiu: z.boolean(),
   grup: optionalGrupPGC,
-  concepte: optionalText(255),
+  concepte: optionalText(5000),
 });
 
 /** Validated input ready for persistence (no id, no timestamps). */
