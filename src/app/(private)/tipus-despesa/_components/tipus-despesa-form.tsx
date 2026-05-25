@@ -1,0 +1,222 @@
+"use client";
+
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
+export type TipusDespesaFormState = {
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+} | null;
+
+export type TipusDespesaFormAction = (
+  prev: TipusDespesaFormState,
+  formData: FormData,
+) => Promise<TipusDespesaFormState>;
+
+type FieldDefaults = {
+  codi: string;
+  descripcio: string;
+  deduible: boolean;
+  esAmortitzable: boolean;
+  actiu: boolean;
+  grup: string;
+  concepte: string;
+};
+
+type Props = {
+  action: TipusDespesaFormAction;
+  defaults: FieldDefaults;
+  submitLabel: string;
+  cancelHref: string;
+};
+
+function FieldError({ messages }: { messages?: string[] }) {
+  if (!messages || messages.length === 0) return null;
+  return (
+    <p className="text-xs text-destructive" role="alert">
+      {messages.join(" · ")}
+    </p>
+  );
+}
+
+export function TipusDespesaForm({
+  action,
+  defaults,
+  submitLabel,
+  cancelHref,
+}: Props) {
+  const [state, formAction, pending] = useActionState<
+    TipusDespesaFormState,
+    FormData
+  >(action, null);
+  const fe = state?.fieldErrors ?? {};
+
+  return (
+    <form action={formAction} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Identificació</CardTitle>
+          <CardDescription>
+            Codi únic intern i descripció visible als llistats.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-5 md:grid-cols-[1fr_2fr]">
+          <div className="space-y-1.5">
+            <Label htmlFor="codi">
+              Codi <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="codi"
+              name="codi"
+              required
+              defaultValue={defaults.codi}
+              placeholder="MAT"
+              className={cn("font-mono uppercase", fe.codi && "border-destructive")}
+              aria-invalid={!!fe.codi}
+            />
+            <FieldError messages={fe.codi} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="descripcio">
+              Descripció <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="descripcio"
+              name="descripcio"
+              required
+              defaultValue={defaults.descripcio}
+              placeholder="Material consumibles d'oficina"
+              className={cn(fe.descripcio && "border-destructive")}
+              aria-invalid={!!fe.descripcio}
+            />
+            <FieldError messages={fe.descripcio} />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id="actiu"
+                name="actiu"
+                defaultChecked={defaults.actiu}
+              />
+              Tipus actiu (apareix als llistats per defecte)
+            </label>
+            <FieldError messages={fe.actiu} />
+          </div>
+        </CardContent>
+
+        <Separator />
+
+        <CardHeader>
+          <CardTitle className="text-xl">Classificació fiscal</CardTitle>
+          <CardDescription>
+            Encaix amb el Pla General Comptable i comportament fiscal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-5 md:grid-cols-[1fr_2fr]">
+          <div className="space-y-1.5">
+            <Label htmlFor="grup">Grup PGC (1–9)</Label>
+            <Input
+              id="grup"
+              name="grup"
+              type="number"
+              min={1}
+              max={9}
+              step={1}
+              defaultValue={defaults.grup}
+              placeholder="6"
+              className={cn("font-mono", fe.grup && "border-destructive")}
+              aria-invalid={!!fe.grup}
+            />
+            <FieldError messages={fe.grup} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="concepte">Concepte (opcional)</Label>
+            <Input
+              id="concepte"
+              name="concepte"
+              defaultValue={defaults.concepte}
+              placeholder="Despeses corrents · Subministraments"
+            />
+            <FieldError messages={fe.concepte} />
+          </div>
+
+          <div className="space-y-3 md:col-span-2">
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id="deduible"
+                name="deduible"
+                defaultChecked={defaults.deduible}
+              />
+              Deduïble fiscalment
+            </label>
+            <FieldError messages={fe.deduible} />
+
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id="esAmortitzable"
+                name="esAmortitzable"
+                defaultChecked={defaults.esAmortitzable}
+              />
+              Amortitzable (genera entrada d&apos;inventari quan es registra
+              una despesa d&apos;aquest tipus)
+            </label>
+            <FieldError messages={fe.esAmortitzable} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {state?.error && (
+        <p
+          role="alert"
+          aria-live="polite"
+          className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          {state.error}
+        </p>
+      )}
+
+      <div className="flex items-center justify-end gap-3">
+        <Button variant="ghost" asChild>
+          <Link href={cancelHref}>Cancel·la</Link>
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Desant…
+            </>
+          ) : (
+            submitLabel
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export const EMPTY_TIPUS_DESPESA_DEFAULTS: FieldDefaults = {
+  codi: "",
+  descripcio: "",
+  deduible: true,
+  esAmortitzable: false,
+  actiu: true,
+  grup: "",
+  concepte: "",
+};
