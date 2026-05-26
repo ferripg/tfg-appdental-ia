@@ -13,7 +13,7 @@ const NAV_ITEMS: { label: string; href: string; disabled?: boolean }[] = [
   { label: "Tauler", href: "/dashboard" },
   { label: "Proveïdors", href: "/proveidors" },
   { label: "Tipus despesa", href: "/tipus-despesa" },
-  { label: "Despeses", href: "#", disabled: true },
+  { label: "Despeses", href: "/despeses" },
   { label: "Inventari", href: "#", disabled: true },
   { label: "Reports", href: "#", disabled: true },
 ];
