@@ -9,35 +9,7 @@ import {
 } from "@/domain/tipus-despesa";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
 import { requireSession } from "./auth-service";
-
-/**
- * Map a Zod issue list to `fieldErrors` keyed by the first path segment.
- *
- * NOTE: duplicated from proveidors-service intentionally. Promotion to a
- * shared `src/services/zod-helpers.ts` will happen at IA-8 (3rd copy).
- * Premature DRY would force a shared shape that may not fit the third
- * CRUD's needs.
- */
-function flattenZodErrors(error: unknown): Record<string, string[]> {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "issues" in error &&
-    Array.isArray((error as { issues: unknown[] }).issues)
-  ) {
-    const out: Record<string, string[]> = {};
-    for (const issue of (
-      error as {
-        issues: { path: PropertyKey[]; message: string }[];
-      }
-    ).issues) {
-      const key = issue.path[0] != null ? String(issue.path[0]) : "_form";
-      (out[key] ??= []).push(issue.message);
-    }
-    return out;
-  }
-  return {};
-}
+import { flattenZodErrors } from "./zod-helpers";
 
 export const tipusDespesaService = {
   async list(filters: TipusDespesaListFilters) {

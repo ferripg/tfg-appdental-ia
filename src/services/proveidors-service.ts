@@ -9,28 +9,7 @@ import {
 } from "@/domain/proveidor";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { requireSession } from "./auth-service";
-
-/** Map a Zod flattened error to fieldErrors with at least one message per field. */
-function flattenZodErrors(error: unknown): Record<string, string[]> {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "issues" in error &&
-    Array.isArray((error as { issues: unknown[] }).issues)
-  ) {
-    const out: Record<string, string[]> = {};
-    for (const issue of (
-      error as {
-        issues: { path: PropertyKey[]; message: string }[];
-      }
-    ).issues) {
-      const key = issue.path[0] != null ? String(issue.path[0]) : "_form";
-      (out[key] ??= []).push(issue.message);
-    }
-    return out;
-  }
-  return {};
-}
+import { flattenZodErrors } from "./zod-helpers";
 
 export const proveidorsService = {
   async list(filters: ProveidorListFilters) {

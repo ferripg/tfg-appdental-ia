@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
 import { NotFoundError } from "@/domain/errors";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
 import { SetActiuButton } from "../_components/desactivar-button";
-import { ResultToast } from "../_components/result-toast";
+import { TIPUS_DESPESA_TOAST_MAP } from "../_components/toast-map";
 import { TipusDespesaForm } from "../_components/tipus-despesa-form";
 import { setActiuAction, updateTipusDespesaAction } from "./actions";
 
@@ -33,7 +34,7 @@ export default async function TipusDespesaDetailPage({
 
   return (
     <div className="space-y-8">
-      <ResultToast msg={msg} />
+      <ResultToast msg={msg} map={TIPUS_DESPESA_TOAST_MAP} />
 
       <div className="space-y-3">
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">

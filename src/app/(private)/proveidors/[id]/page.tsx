@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
 import { NotFoundError } from "@/domain/errors";
 import { proveidorsService } from "@/services/proveidors-service";
-import { ResultToast } from "../_components/result-toast";
 import { SetActiuButton } from "../_components/desactivar-button";
 import { ProveidorForm } from "../_components/proveidor-form";
+import { PROVEIDORS_TOAST_MAP } from "../_components/toast-map";
 import { setActiuAction, updateProveidorAction } from "./actions";
 
 type Params = Promise<{ id: string }>;
@@ -33,7 +34,7 @@ export default async function ProveidorDetailPage({
 
   return (
     <div className="space-y-8">
-      <ResultToast msg={msg} />
+      <ResultToast msg={msg} map={PROVEIDORS_TOAST_MAP} />
 
       <div className="space-y-3">
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">

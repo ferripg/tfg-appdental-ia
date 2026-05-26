@@ -1,10 +1,11 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { ResultToast } from "@/components/app/result-toast";
 import { Button } from "@/components/ui/button";
 import { proveidorsService } from "@/services/proveidors-service";
 import { ProveidorsFilters } from "./_components/proveidors-filters";
 import { ProveidorsTable } from "./_components/proveidors-table";
-import { ResultToast } from "./_components/result-toast";
+import { PROVEIDORS_TOAST_MAP } from "./_components/toast-map";
 
 type SearchParams = Promise<{
   q?: string;
@@ -25,7 +26,7 @@ export default async function ProveidorsPage({
 
   return (
     <div className="space-y-8">
-      <ResultToast msg={msg} />
+      <ResultToast msg={msg} map={PROVEIDORS_TOAST_MAP} />
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">

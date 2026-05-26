@@ -1,8 +1,9 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { ResultToast } from "@/components/app/result-toast";
 import { Button } from "@/components/ui/button";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
-import { ResultToast } from "./_components/result-toast";
+import { TIPUS_DESPESA_TOAST_MAP } from "./_components/toast-map";
 import { TipusDespesaFilters } from "./_components/tipus-despesa-filters";
 import { TipusDespesaTable } from "./_components/tipus-despesa-table";
 
@@ -25,7 +26,7 @@ export default async function TipusDespesaPage({
 
   return (
     <div className="space-y-8">
-      <ResultToast msg={msg} />
+      <ResultToast msg={msg} map={TIPUS_DESPESA_TOAST_MAP} />
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
