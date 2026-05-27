@@ -26,3 +26,6 @@ export class NotFoundError extends DomainError {}
 
 /** Caller is not authenticated. */
 export class UnauthorizedError extends DomainError {}
+
+/** Caller is authenticated but lacks the required role (e.g. non-ADMIN at /usuaris). */
+export class ForbiddenError extends DomainError {}

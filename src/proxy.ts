@@ -3,13 +3,16 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
 // Routes that require an authenticated session. Add new private prefixes
-// here as new modules ship. When we reach 5+ prefixes, refactor to a
-// catch-all matcher that excludes public assets and the /api/auth route.
+// here as new modules ship. With 5 prefixes now, the next CRUD should
+// trigger the refactor to a catch-all matcher that excludes public assets
+// and the /api/auth route. RBAC (admin-only on /usuaris) is enforced in
+// the service layer via requireAdmin(), not here.
 const PRIVATE_PREFIXES = [
   "/dashboard",
   "/proveidors",
   "/tipus-despesa",
   "/despeses",
+  "/usuaris",
 ];
 
 function isPrivate(pathname: string): boolean {
@@ -37,5 +40,6 @@ export const config = {
     "/proveidors/:path*",
     "/tipus-despesa/:path*",
     "/despeses/:path*",
+    "/usuaris/:path*",
   ],
 };
