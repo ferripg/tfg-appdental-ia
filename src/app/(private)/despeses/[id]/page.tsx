@@ -9,8 +9,14 @@ import { tipusDespesaService } from "@/services/tipus-despesa-service";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DespesaForm } from "../_components/despesa-form";
 import { EliminarDespesaButton } from "../_components/eliminar-button";
+import { FacturaSection } from "../_components/factura-section";
 import { DESPESES_TOAST_MAP } from "../_components/toast-map";
-import { deleteDespesaAction, updateDespesaAction } from "./actions";
+import {
+  deleteDespesaAction,
+  deleteInvoiceAction,
+  updateDespesaAction,
+  uploadInvoiceAction,
+} from "./actions";
 
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<{ msg?: string | string[] }>;
@@ -38,12 +44,15 @@ export default async function DespesaDetailPage({
     throw err;
   }
 
-  const [tipus, proveidors] = await Promise.all([
+  const [tipus, proveidors, downloadUrl] = await Promise.all([
     tipusDespesaService.list({ includeInactius: false }),
     proveidorsService.list({ includeInactius: false }),
+    despesa.fitxerKey ? despesesService.getInvoiceUrl(id) : Promise.resolve(null),
   ]);
 
   const updateAction = updateDespesaAction.bind(null, id);
+  const uploadAction = uploadInvoiceAction.bind(null, id);
+  const removeFactura = deleteInvoiceAction.bind(null, id);
 
   return (
     <div className="space-y-8">
@@ -80,6 +89,13 @@ export default async function DespesaDetailPage({
           el {formatDate(despesa.createdAt)}.
         </p>
       </div>
+
+      <FacturaSection
+        fitxerKey={despesa.fitxerKey}
+        downloadUrl={downloadUrl}
+        uploadAction={uploadAction}
+        deleteAction={removeFactura}
+      />
 
       <DespesaForm
         action={updateAction}

@@ -139,4 +139,8 @@ export const despesesRepository = {
   async delete(id: string): Promise<void> {
     await prisma.despesa.delete({ where: { id } });
   },
+
+  async setFitxerKey(id: string, fitxerKey: string | null): Promise<void> {
+    await prisma.despesa.update({ where: { id }, data: { fitxerKey } });
+  },
 };

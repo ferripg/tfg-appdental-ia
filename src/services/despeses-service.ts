@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   BusinessError,
   NotFoundError,
@@ -8,10 +9,27 @@ import {
   despesaInputSchema,
 } from "@/domain/despesa";
 import { despesesRepository } from "@/repositories/despeses-repository";
+import { facturesRepository } from "@/repositories/factures-repository";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
 import { requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
+
+const MAX_INVOICE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const invoiceFileSchema = z
+  .instanceof(File, { error: "Cal adjuntar un fitxer" })
+  .refine((f) => f.size > 0, { error: "El fitxer és buit" })
+  .refine((f) => f.size <= MAX_INVOICE_BYTES, {
+    error: "El fitxer supera el màxim de 5 MB",
+  })
+  .refine((f) => f.type === "application/pdf", {
+    error: "Només s'admeten fitxers PDF",
+  });
+
+function fitxerKeyFor(despesaId: string): string {
+  return `despesa-${despesaId}.pdf`;
+}
 
 export const despesesService = {
   async list(filters: DespesaListFilters) {
@@ -134,6 +152,21 @@ export const despesesService = {
     await requireSession();
     const current = await despesesRepository.findById(id);
     if (!current) throw new NotFoundError("Despesa no trobada");
+
+    // Cascade cleanup: si la despesa té factura adjunta, esborra-la de MinIO
+    // ABANS del delete a BD. Si MinIO falla, log i continua (no bloquegem el
+    // delete fiscal per un fitxer orfe). Patró equivalent al MAN-11.
+    if (current.fitxerKey) {
+      try {
+        await facturesRepository.remove(current.fitxerKey);
+      } catch (err) {
+        console.error(
+          `[despesesService.delete] cleanup factura ${current.fitxerKey} ha fallat:`,
+          err,
+        );
+      }
+    }
+
     try {
       await despesesRepository.delete(id);
     } catch (err) {
@@ -150,5 +183,40 @@ export const despesesService = {
       }
       throw err;
     }
+  },
+
+  async uploadInvoice(despesaId: string, file: unknown) {
+    await requireSession();
+    const current = await despesesRepository.findById(despesaId);
+    if (!current) throw new NotFoundError("Despesa no trobada");
+
+    const parsed = invoiceFileSchema.safeParse(file);
+    if (!parsed.success) {
+      throw new ValidationError("Fitxer no vàlid", {
+        file: parsed.error.issues.map((i) => i.message),
+      });
+    }
+
+    const key = fitxerKeyFor(despesaId);
+    const buffer = Buffer.from(await parsed.data.arrayBuffer());
+    await facturesRepository.upload(key, buffer, "application/pdf");
+    await despesesRepository.setFitxerKey(despesaId, key);
+  },
+
+  async getInvoiceUrl(despesaId: string): Promise<string | null> {
+    await requireSession();
+    const current = await despesesRepository.findById(despesaId);
+    if (!current) throw new NotFoundError("Despesa no trobada");
+    if (!current.fitxerKey) return null;
+    return facturesRepository.getDownloadUrl(current.fitxerKey);
+  },
+
+  async deleteInvoice(despesaId: string) {
+    await requireSession();
+    const current = await despesesRepository.findById(despesaId);
+    if (!current) throw new NotFoundError("Despesa no trobada");
+    if (!current.fitxerKey) return;
+    await facturesRepository.remove(current.fitxerKey);
+    await despesesRepository.setFitxerKey(despesaId, null);
   },
 };
