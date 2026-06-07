@@ -10,6 +10,7 @@ import {
 } from "@/domain/despesa";
 import { despesesRepository } from "@/repositories/despeses-repository";
 import { facturesRepository } from "@/repositories/factures-repository";
+import { inventariRepository } from "@/repositories/inventari-repository";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
 import { requireSession } from "./auth-service";
@@ -77,6 +78,16 @@ export const despesesService = {
       });
     }
 
+    // Despeses amortitzables → es generarà un bé d'inventari, que exigeix
+    // proveïdor. Per això el proveïdor passa a ser obligatori en aquest cas.
+    if (tipus.esAmortitzable && !data.proveidorId) {
+      throw new BusinessError("Falta el proveïdor", {
+        proveidorId: [
+          "Obligatori en despeses amortitzables (es generarà un bé d'inventari)",
+        ],
+      });
+    }
+
     if (data.proveidorId) {
       const prov = await proveidorsRepository.findById(data.proveidorId);
       if (!prov) {
@@ -91,7 +102,18 @@ export const despesesService = {
       }
     }
 
-    return despesesRepository.create({ ...data, userId: session.user.id });
+    const created = await despesesRepository.create({
+      ...data,
+      userId: session.user.id,
+    });
+
+    // Generació automàtica de l'inventari: si el tipus és amortitzable, el bé
+    // hereta les dades de la despesa (% a 0, a omplir després).
+    if (tipus.esAmortitzable) {
+      await inventariRepository.createFromDespesa(created.id);
+    }
+
+    return created;
   },
 
   async update(id: string, input: unknown) {
@@ -116,20 +138,26 @@ export const despesesService = {
       });
     }
 
-    // FK checks only if changed (evita reaccions a desactivacions retroactives
-    // sobre despeses ja existents).
-    if (data.tipusDespesaId !== current.tipusDespesaId) {
-      const tipus = await tipusDespesaRepository.findById(data.tipusDespesaId);
-      if (!tipus) {
-        throw new BusinessError("Tipus de despesa no vàlid", {
-          tipusDespesaId: ["Tipus de despesa no trobat"],
-        });
-      }
-      if (!tipus.actiu) {
-        throw new BusinessError("Tipus de despesa desactivat", {
-          tipusDespesaId: ["Aquest tipus està desactivat"],
-        });
-      }
+    // Sempre llegim el tipus (en necessitem `esAmortitzable`); l'estat actiu
+    // només es valida si el tipus ha canviat (evita bloquejar edicions quan
+    // un tipus s'ha desactivat retroactivament).
+    const tipus = await tipusDespesaRepository.findById(data.tipusDespesaId);
+    if (!tipus) {
+      throw new BusinessError("Tipus de despesa no vàlid", {
+        tipusDespesaId: ["Tipus de despesa no trobat"],
+      });
+    }
+    if (data.tipusDespesaId !== current.tipusDespesaId && !tipus.actiu) {
+      throw new BusinessError("Tipus de despesa desactivat", {
+        tipusDespesaId: ["Aquest tipus està desactivat"],
+      });
+    }
+    if (tipus.esAmortitzable && !data.proveidorId) {
+      throw new BusinessError("Falta el proveïdor", {
+        proveidorId: [
+          "Obligatori en despeses amortitzables (es generarà un bé d'inventari)",
+        ],
+      });
     }
     if (data.proveidorId && data.proveidorId !== current.proveidorId) {
       const prov = await proveidorsRepository.findById(data.proveidorId);
@@ -145,7 +173,15 @@ export const despesesService = {
       }
     }
 
-    return despesesRepository.update(id, data);
+    const updated = await despesesRepository.update(id, data);
+
+    // Si el tipus és amortitzable i la despesa encara no té bé associat, el
+    // generem ara (idempotent: si ja en té, no fa res).
+    if (tipus.esAmortitzable) {
+      await inventariRepository.createFromDespesa(id);
+    }
+
+    return updated;
   },
 
   async delete(id: string) {

@@ -174,19 +174,27 @@ enum EstatInventari {
 }
 
 model Inventari {
-  id                String         @id @default(cuid())
+  id String @id @default(cuid())
+
+  // Número d'inventari llegible (INV-0001, INV-0002…). Únic i generat
+  // seqüencialment quan es crea el bé a partir d'una despesa amortitzable.
+  numInventari String @unique
+
   dataAdquisicio    DateTime
   descripcio        String
   importAdquisicio  Decimal        @db.Decimal(12, 2)
   importAmortitzat  Decimal        @db.Decimal(12, 2) @default(0)
-  percAmortitzacio  Decimal        @db.Decimal(5, 2)
+  // Per omissió 0: els béns es generen automàticament i el % s'omple després.
+  percAmortitzacio  Decimal        @db.Decimal(5, 2) @default(0)
   importUltimaAmort Decimal?       @db.Decimal(12, 2)
   numFactura        String?
   estat             EstatInventari @default(ACTIU)
   anyBaixa          Int?
 
-  proveidorId String?
-  proveidor   Proveidor? @relation(fields: [proveidorId], references: [id])
+  // Proveïdor OBLIGATORI: un bé amortitzable sempre prové d'una compra a un
+  // proveïdor. La despesa origen també l'exigeix quan el tipus és amortitzable.
+  proveidorId String
+  proveidor   Proveidor @relation(fields: [proveidorId], references: [id])
 
   despesaId String?  @unique
   despesa   Despesa? @relation(fields: [despesaId], references: [id])

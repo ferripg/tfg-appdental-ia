@@ -19,7 +19,8 @@ const NAV_ITEMS: {
   { label: "Proveïdors", href: "/proveidors" },
   { label: "Tipus despesa", href: "/tipus-despesa" },
   { label: "Despeses", href: "/despeses" },
-  { label: "Inventari", href: "#", disabled: true },
+  { label: "Inventari", href: "/inventari" },
+  { label: "Amortitzacions", href: "/amortitzacions" },
   { label: "Reports", href: "#", disabled: true },
   { label: "Usuaris", href: "/usuaris", adminOnly: true },
 ];

@@ -7,6 +7,7 @@ import {
   type TipusDespesaListFilters,
   tipusDespesaInputSchema,
 } from "@/domain/tipus-despesa";
+import { inventariRepository } from "@/repositories/inventari-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
 import { requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
@@ -41,7 +42,11 @@ export const tipusDespesaService = {
       });
     }
 
-    return tipusDespesaRepository.create(parsed.data);
+    const created = await tipusDespesaRepository.create(parsed.data);
+    if (created.esAmortitzable) {
+      await inventariRepository.generateMissingForTipus(created.id);
+    }
+    return created;
   },
 
   async update(id: string, input: unknown) {
@@ -67,7 +72,16 @@ export const tipusDespesaService = {
       }
     }
 
-    return tipusDespesaRepository.update(id, parsed.data);
+    const updated = await tipusDespesaRepository.update(id, parsed.data);
+
+    // En desar el tipus com a amortitzable, generem retroactivament els béns
+    // de les despeses existents d'aquest tipus que encara no en tenen (cobreix
+    // tant la transició no→sí com una desada posterior amb béns pendents).
+    if (updated.esAmortitzable) {
+      await inventariRepository.generateMissingForTipus(id);
+    }
+
+    return updated;
   },
 
   async setActiu(id: string, actiu: boolean) {
