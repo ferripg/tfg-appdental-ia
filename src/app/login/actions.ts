@@ -23,16 +23,29 @@ export async function loginAction(
     // credencials (401) o de validació (4xx). Qualsevol altra excepció
     // és un error tècnic (p.ex. BD inaccessible) que no s'ha de mostrar
     // com a "credencials invàlides" perquè enganya l'usuari.
-    const status =
-      typeof err === "object" && err !== null && "status" in err
-        ? (err as { status: unknown }).status
-        : undefined;
+    const e = err as {
+      status?: unknown;
+      statusCode?: unknown;
+      body?: { message?: string };
+    };
+    const status = e?.status;
+    const statusCode = e?.statusCode;
+
+    // Bloqueig propi (compte desactivat o bloquejat per intents fallits):
+    // els hooks de seguretat retornen 403 amb un missatge ja redactat en
+    // català, que mostrem tal qual perquè l'usuari sàpiga què passa.
+    const isBlocked = status === "FORBIDDEN" || statusCode === 403;
+    if (isBlocked && e.body?.message) {
+      return { error: e.body.message };
+    }
 
     const isCredentialError =
       status === 401 ||
       status === 400 ||
       status === "UNAUTHORIZED" ||
-      status === "BAD_REQUEST";
+      status === "BAD_REQUEST" ||
+      statusCode === 401 ||
+      statusCode === 400;
 
     if (isCredentialError) {
       return { error: "Credencials invàlides" };

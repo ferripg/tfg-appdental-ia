@@ -4,6 +4,7 @@ import type {
   UserListFilters,
   UserListItem,
   UserRole,
+  UserSecurity,
 } from "@/domain/user";
 import { prisma } from "./prisma-client";
 
@@ -117,10 +118,83 @@ export const usersRepository = {
    * Wipe every Session row for a given user. Used in two places:
    *  1. After admin-creates-user via signUpEmail, to discard the
    *     side-effect Session the signup endpoint produces.
-   *  2. Potentially in Sprint 3+ when a user is deactivated or their
-   *     role is downgraded (not used yet — see plan limitations).
+   *  2. When an admin deactivates a user, to kick out any live session
+   *     (sessions are DB-backed via the Prisma adapter and there is no
+   *     `cookieCache` configured, so deleting the rows invalidates them
+   *     on the very next request — equivalent to Better Auth's internal
+   *     `deleteUserSessions`).
    */
   async dropAllSessionsFor(userId: string): Promise<void> {
     await prisma.session.deleteMany({ where: { userId } });
+  },
+
+  // ---------------------------------------------------------------------------
+  // Seguretat d'accés (lockout). Aquests mètodes llegeixen/escriuen els camps
+  // custom (failedLoginAttempts, lockedUntil, lastLoginAt) que no formen part
+  // del tipus de domini `User` ni s'exposen a la UI.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Projecció de seguretat per email. Retorna `null` si l'email no existeix
+   * (la lògica de login ho tracta com a "credencials invàlides" per no
+   * filtrar quins comptes existeixen).
+   */
+  async findSecurityByEmail(email: string): Promise<UserSecurity | null> {
+    const row = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        actiu: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
+      },
+    });
+    return row;
+  },
+
+  /**
+   * Incrementa atòmicament el comptador d'intents fallits i retorna el nou
+   * valor, perquè el servei decideixi si cal bloquejar.
+   */
+  async incrementFailedAttempts(userId: string): Promise<number> {
+    const row = await prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: { increment: 1 } },
+      select: { failedLoginAttempts: true },
+    });
+    return row.failedLoginAttempts;
+  },
+
+  /** Marca el compte com a bloquejat fins a `until`. */
+  async lockAccount(userId: string, until: Date): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { lockedUntil: until },
+    });
+  },
+
+  /**
+   * Neteja l'estat de fallits (comptador a 0, sense bloqueig). S'usa quan
+   * expira un bloqueig per donar una nova tanda d'intents.
+   */
+  async clearLoginFailures(userId: string): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
+  },
+
+  /**
+   * Login correcte: neteja fallits/bloqueig i segella `lastLoginAt`.
+   */
+  async recordSuccessfulLogin(userId: string): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        lastLoginAt: new Date(),
+      },
+    });
   },
 };

@@ -29,3 +29,25 @@ export class UnauthorizedError extends DomainError {}
 
 /** Caller is authenticated but lacks the required role (e.g. non-ADMIN at /usuaris). */
 export class ForbiddenError extends DomainError {}
+
+/**
+ * El compte existeix però està desactivat (`actiu = false`): l'admin l'ha
+ * inhabilitat. No pot iniciar sessió fins que el reactivin. Es llança des
+ * de la lògica de seguretat del login i l'adaptador de Better Auth la
+ * tradueix a un `APIError` 403.
+ */
+export class AccountDisabledError extends DomainError {}
+
+/**
+ * El compte està bloquejat temporalment per massa intents fallits seguits.
+ * `retryAfterMinutes` és el temps que falta perquè expiri el bloqueig, per
+ * poder-ho comunicar a l'usuari sense revelar la política exacta.
+ */
+export class AccountLockedError extends DomainError {
+  readonly retryAfterMinutes: number;
+
+  constructor(message: string, retryAfterMinutes: number) {
+    super(message);
+    this.retryAfterMinutes = retryAfterMinutes;
+  }
+}

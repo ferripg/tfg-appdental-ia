@@ -188,6 +188,16 @@ export const usersService = {
       }
     }
 
-    return usersRepository.setActiu(id, actiu);
+    const updated = await usersRepository.setActiu(id, actiu);
+
+    // En desactivar, expulsa l'usuari de qualsevol sessió viva: esborrem les
+    // seves files de Session perquè el següent `getSession` falli i el proxy
+    // el redirigeixi a /login. Sense això, un usuari ja loguejat seguiria
+    // operant fins que expirés la cookie tot i estar desactivat.
+    if (!actiu) {
+      await usersRepository.dropAllSessionsFor(id);
+    }
+
+    return updated;
   },
 };

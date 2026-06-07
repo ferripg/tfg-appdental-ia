@@ -77,6 +77,17 @@ export type User = {
  *  future `_count` joins can extend it without breaking callers. */
 export type UserListItem = User;
 
+/**
+ * Projecció mínima dels camps de seguretat d'accés. No s'exposa a la UI
+ * (no surt a `User`): només la consumeix la lògica de lockout del login.
+ */
+export type UserSecurity = {
+  id: string;
+  actiu: boolean;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
+};
+
 /** List filters parsed from search params. */
 export type UserListFilters = {
   search?: string;
