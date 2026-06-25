@@ -140,7 +140,13 @@ export default async function AmortitzacionsPage({
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="ghost" size="sm">
-                      <Link href={`/amortitzacions?ex=${r.exercici}`}>
+                      <Link
+                        href={
+                          exSeleccionat === r.exercici
+                            ? "/amortitzacions"
+                            : `/amortitzacions?ex=${r.exercici}`
+                        }
+                      >
                         {exSeleccionat === r.exercici ? "Amaga" : "Detall"}
                       </Link>
                     </Button>
