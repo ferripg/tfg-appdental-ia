@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -24,6 +25,31 @@ const FAMILIA_CLASS: Record<FamiliaAccio, string> = {
   fiscal: "border-sky-500/40 text-sky-600 dark:text-sky-400",
   dades: "border-muted-foreground/30 text-muted-foreground",
 };
+
+/**
+ * Ruta de la fitxa de cada entitat auditada. L'`entitatId` que es mostra a la
+ * taula esdevé un enllaç cap aquí, per saltar al registre afectat (despesa,
+ * proveïdor, usuari…). Per a `Amortitzacio` l'`entitatId` és l'exercici (any),
+ * així que enllaça a la pantalla d'amortitzacions amb el detall obert.
+ */
+const FITXA_ROUTE: Record<string, (id: string) => string> = {
+  User: (id) => `/usuaris/${id}`,
+  Proveidor: (id) => `/proveidors/${id}`,
+  TipusDespesa: (id) => `/tipus-despesa/${id}`,
+  Despesa: (id) => `/despeses/${id}`,
+  Inventari: (id) => `/inventari/${id}`,
+  Amortitzacio: (exercici) => `/amortitzacions?ex=${exercici}`,
+};
+
+/** URL de la fitxa de l'entitat auditada, o null si no en té de navegable. */
+function fitxaHref(
+  entitat: string | null,
+  entitatId: string | null,
+): string | null {
+  if (!entitat || !entitatId) return null;
+  const build = FITXA_ROUTE[entitat];
+  return build ? build(entitatId) : null;
+}
 
 /** Resum llegible del JSON de context: "clau: valor · clau: valor". */
 function formatMetadata(metadata: AuditJson | null): string | null {
@@ -73,6 +99,7 @@ export function AuditoriaTable({ entries }: { entries: AuditLogEntry[] }) {
         <TableBody>
           {entries.map((e) => {
             const detall = formatMetadata(e.metadata);
+            const href = fitxaHref(e.entitat, e.entitatId);
             return (
               <TableRow key={e.id}>
                 <TableCell className="whitespace-nowrap font-mono text-xs tabular-nums text-muted-foreground">
@@ -100,7 +127,17 @@ export function AuditoriaTable({ entries }: { entries: AuditLogEntry[] }) {
                     <>
                       {e.entitat}
                       {e.entitatId ? (
-                        <span className="opacity-60"> · {e.entitatId}</span>
+                        href ? (
+                          <Link
+                            href={href}
+                            className="text-foreground/70 underline-offset-2 hover:text-foreground hover:underline"
+                          >
+                            {" · "}
+                            {e.entitatId}
+                          </Link>
+                        ) : (
+                          <span className="opacity-60"> · {e.entitatId}</span>
+                        )
                       ) : null}
                     </>
                   ) : (
