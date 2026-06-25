@@ -40,6 +40,9 @@ type Props = {
   downloadUrl: string | null;
   uploadAction: UploadAction;
   deleteAction: DeleteAction;
+  /** Si l'usuari pot editar la despesa (pujar/esborrar factura). En mode
+   *  consulta només es permet veure/descarregar la factura existent. */
+  canEdit: boolean;
 };
 
 /**
@@ -53,6 +56,7 @@ export function FacturaSection({
   downloadUrl,
   uploadAction,
   deleteAction,
+  canEdit,
 }: Props) {
   return (
     <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
@@ -64,9 +68,17 @@ export function FacturaSection({
       </header>
 
       {fitxerKey && downloadUrl ? (
-        <ExistingFile downloadUrl={downloadUrl} deleteAction={deleteAction} />
-      ) : (
+        <ExistingFile
+          downloadUrl={downloadUrl}
+          deleteAction={deleteAction}
+          canEdit={canEdit}
+        />
+      ) : canEdit ? (
         <UploadForm uploadAction={uploadAction} />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Aquesta despesa no té cap factura adjunta.
+        </p>
       )}
     </section>
   );
@@ -129,9 +141,11 @@ function UploadForm({ uploadAction }: { uploadAction: UploadAction }) {
 function ExistingFile({
   downloadUrl,
   deleteAction,
+  canEdit,
 }: {
   downloadUrl: string;
   deleteAction: DeleteAction;
+  canEdit: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -155,6 +169,7 @@ function ExistingFile({
             Veure PDF
           </a>
         </Button>
+        {canEdit && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
@@ -191,6 +206,7 @@ function ExistingFile({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        )}
       </div>
     </div>
   );

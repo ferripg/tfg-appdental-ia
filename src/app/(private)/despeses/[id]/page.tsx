@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
 import { NotFoundError } from "@/domain/errors";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { despesesService } from "@/services/despeses-service";
 import { proveidorsService } from "@/services/proveidors-service";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
@@ -50,6 +53,9 @@ export default async function DespesaDetailPage({
     despesa.fitxerKey ? despesesService.getInvoiceUrl(id) : Promise.resolve(null),
   ]);
 
+  // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  const canEdit = potGestionarDomini(await currentRole());
+
   const updateAction = updateDespesaAction.bind(null, id);
   const uploadAction = uploadInvoiceAction.bind(null, id);
   const removeFactura = deleteInvoiceAction.bind(null, id);
@@ -90,11 +96,14 @@ export default async function DespesaDetailPage({
         </p>
       </div>
 
+      {!canEdit && <ModeConsultaBanner />}
+
       <FacturaSection
         fitxerKey={despesa.fitxerKey}
         downloadUrl={downloadUrl}
         uploadAction={uploadAction}
         deleteAction={removeFactura}
+        canEdit={canEdit}
       />
 
       <DespesaForm
@@ -112,24 +121,27 @@ export default async function DespesaDetailPage({
         cancelHref="/despeses"
         tipus={tipus}
         proveidors={proveidors}
+        readOnly={!canEdit}
       />
 
-      <section className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-5">
-        <h2 className="text-xl">Zona perillosa</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Eliminar la despesa la treu permanentment de la base de dades. No
-          hi ha forma de recuperar-la. Si la despesa té un element
-          d&apos;inventari associat (despeses amortitzables), Prisma
-          refusarà l&apos;eliminació.
-        </p>
-        <div>
-          <EliminarDespesaButton
-            id={despesa.id}
-            label={`${despesa.tipusDespesa.codi} · ${formatCurrency(despesa.import)}`}
-            action={deleteDespesaAction}
-          />
-        </div>
-      </section>
+      {canEdit && (
+        <section className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-5">
+          <h2 className="text-xl">Zona perillosa</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Eliminar la despesa la treu permanentment de la base de dades. No
+            hi ha forma de recuperar-la. Si la despesa té un element
+            d&apos;inventari associat (despeses amortitzables), Prisma
+            refusarà l&apos;eliminació.
+          </p>
+          <div>
+            <EliminarDespesaButton
+              id={despesa.id}
+              label={`${despesa.tipusDespesa.codi} · ${formatCurrency(despesa.import)}`}
+              action={deleteDespesaAction}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

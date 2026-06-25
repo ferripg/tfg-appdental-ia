@@ -2,7 +2,7 @@ import type { EstatAmortitzacions } from "@/domain/amortitzacio";
 import { BusinessError } from "@/domain/errors";
 import { amortitzacionsRepository } from "@/repositories/amortitzacions-repository";
 import { auditService } from "./audit-service";
-import { requireSession } from "./auth-service";
+import { requireManager, requireSession } from "./auth-service";
 
 /**
  * Calcula l'estat seqüencial del procés d'amortització:
@@ -40,7 +40,7 @@ export const amortitzacionsService = {
    * exercici (seqüencial, no es poden saltar anys).
    */
   async generar(exercici: number) {
-    const session = await requireSession();
+    const session = await requireManager();
     const { proximExercici } = await calcularEstat();
 
     if (proximExercici === null) {
@@ -74,7 +74,7 @@ export const amortitzacionsService = {
    * ordre invers), per mantenir la coherència de l'acumulat.
    */
   async retrocedir(exercici: number) {
-    const session = await requireSession();
+    const session = await requireManager();
     const ultim = await amortitzacionsRepository.maxExerciciGenerat();
 
     if (ultim === null) {

@@ -2,6 +2,8 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { ResultToast } from "@/components/app/result-toast";
 import { Button } from "@/components/ui/button";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { proveidorsService } from "@/services/proveidors-service";
 import { ProveidorsFilters } from "./_components/proveidors-filters";
 import { ProveidorsTable } from "./_components/proveidors-table";
@@ -23,6 +25,7 @@ export default async function ProveidorsPage({
   const includeInactius = inactius === "1";
 
   const proveidors = await proveidorsService.list({ search, includeInactius });
+  const canManage = potGestionarDomini(await currentRole());
 
   return (
     <div className="space-y-8">
@@ -40,12 +43,14 @@ export default async function ProveidorsPage({
             transferències.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/proveidors/nou">
-            <Plus className="size-4" />
-            Nou proveïdor
-          </Link>
-        </Button>
+        {canManage && (
+          <Button asChild>
+            <Link href="/proveidors/nou">
+              <Plus className="size-4" />
+              Nou proveïdor
+            </Link>
+          </Button>
+        )}
       </div>
 
       <ProveidorsFilters search={search} includeInactius={includeInactius} />

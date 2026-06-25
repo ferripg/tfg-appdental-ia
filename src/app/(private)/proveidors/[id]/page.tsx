@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
 import { NotFoundError } from "@/domain/errors";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { proveidorsService } from "@/services/proveidors-service";
 import { SetActiuButton } from "../_components/desactivar-button";
 import { ProveidorForm } from "../_components/proveidor-form";
@@ -30,6 +33,8 @@ export default async function ProveidorDetailPage({
     throw err;
   }
 
+  // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  const canEdit = potGestionarDomini(await currentRole());
   const updateAction = updateProveidorAction.bind(null, id);
 
   return (
@@ -63,6 +68,8 @@ export default async function ProveidorDetailPage({
         </p>
       </div>
 
+      {!canEdit && <ModeConsultaBanner />}
+
       <ProveidorForm
         action={updateAction}
         defaults={{
@@ -81,24 +88,27 @@ export default async function ProveidorDetailPage({
         }}
         submitLabel="Desa els canvis"
         cancelHref="/proveidors"
+        readOnly={!canEdit}
       />
 
-      <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-        <h2 className="text-xl">Estat del proveïdor</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Desactivar el proveïdor el treu dels llistats per defecte però
-          manté tot el seu històric de despeses i inventari intacte. Sempre
-          pots reactivar-lo més endavant.
-        </p>
-        <div>
-          <SetActiuButton
-            id={proveidor.id}
-            nom={proveidor.nom}
-            actiu={proveidor.actiu}
-            action={setActiuAction}
-          />
-        </div>
-      </section>
+      {canEdit && (
+        <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
+          <h2 className="text-xl">Estat del proveïdor</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Desactivar el proveïdor el treu dels llistats per defecte però
+            manté tot el seu històric de despeses i inventari intacte. Sempre
+            pots reactivar-lo més endavant.
+          </p>
+          <div>
+            <SetActiuButton
+              id={proveidor.id}
+              nom={proveidor.nom}
+              actiu={proveidor.actiu}
+              action={setActiuAction}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

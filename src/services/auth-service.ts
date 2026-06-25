@@ -34,3 +34,32 @@ export async function requireAdmin() {
   }
   return session;
 }
+
+/**
+ * Authorization gate for domain write operations (create/update/delete of
+ * proveïdors, tipus de despesa, inventari, amortitzacions, and editing or
+ * deleting despeses). Allowed for MANAGER and ADMIN; OPERARI is read-only on
+ * the domain (it may only CREATE despeses, which stays behind `requireSession`).
+ *
+ * Like `requireAdmin`, pages catch `ForbiddenError` and respond with
+ * `notFound()`; Server Actions surface it through the standard error handling.
+ */
+export async function requireManager() {
+  const session = await requireSession();
+  const role = (session.user as { role?: string }).role;
+  if (role !== "ADMIN" && role !== "MANAGER") {
+    throw new ForbiddenError("Cal ser gestor o administrador");
+  }
+  return session;
+}
+
+/**
+ * Rol de la sessió actual (o null si no hi ha sessió). Pensat per a Server
+ * Components que han de decidir què mostrar segons el rol sense llançar:
+ * el layout privat ja garanteix la sessió, però aquesta funció no peta si
+ * no n'hi ha.
+ */
+export async function currentRole(): Promise<string | null> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session ? ((session.user as { role?: string }).role ?? null) : null;
+}

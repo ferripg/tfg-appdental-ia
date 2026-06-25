@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import {
   EMPTY_PROVEIDOR_DEFAULTS,
   ProveidorForm,
 } from "../_components/proveidor-form";
 import { createProveidorAction } from "./actions";
 
-export default function NouProveidorPage() {
+export default async function NouProveidorPage() {
+  // RBAC: crear catàlegs és cosa de MANAGER/ADMIN. Amaguem la ruta a OPERARI.
+  if (!potGestionarDomini(await currentRole())) notFound();
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">

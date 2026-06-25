@@ -10,7 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { potGestionarDomini } from "@/domain/permissions";
 import { amortitzacionsService } from "@/services/amortitzacions-service";
+import { currentRole } from "@/services/auth-service";
 import { formatCurrency } from "@/lib/format";
 import { ConfirmActionButton } from "./_components/confirm-action-button";
 import { AMORTITZACIONS_TOAST_MAP } from "./_components/toast-map";
@@ -32,6 +34,8 @@ export default async function AmortitzacionsPage({
     amortitzacionsService.getEstat(),
     amortitzacionsService.getResum(),
   ]);
+
+  const canManage = potGestionarDomini(await currentRole());
 
   const exSeleccionat = sp.ex && /^\d{4}$/.test(sp.ex) ? Number(sp.ex) : null;
   const detall =
@@ -74,6 +78,7 @@ export default async function AmortitzacionsPage({
             {estat.proximExercici ?? "—"}
           </p>
         </div>
+        {canManage && (
         <div className="flex items-center gap-3">
           {estat.proximExercici !== null && (
             <ConfirmActionButton
@@ -98,6 +103,7 @@ export default async function AmortitzacionsPage({
             />
           )}
         </div>
+        )}
       </div>
 
       {resum.length === 0 ? (

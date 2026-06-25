@@ -14,7 +14,7 @@ import { inventariRepository } from "@/repositories/inventari-repository";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
 import { auditService } from "./audit-service";
-import { requireSession } from "./auth-service";
+import { requireManager, requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
 const MAX_INVOICE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -125,7 +125,7 @@ export const despesesService = {
   },
 
   async update(id: string, input: unknown) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await despesesRepository.findById(id);
     if (!current) throw new NotFoundError("Despesa no trobada");
 
@@ -200,7 +200,7 @@ export const despesesService = {
   },
 
   async delete(id: string) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await despesesRepository.findById(id);
     if (!current) throw new NotFoundError("Despesa no trobada");
 
@@ -246,7 +246,7 @@ export const despesesService = {
   },
 
   async uploadInvoice(despesaId: string, file: unknown) {
-    await requireSession();
+    await requireManager();
     const current = await despesesRepository.findById(despesaId);
     if (!current) throw new NotFoundError("Despesa no trobada");
 
@@ -272,7 +272,7 @@ export const despesesService = {
   },
 
   async deleteInvoice(despesaId: string) {
-    await requireSession();
+    await requireManager();
     const current = await despesesRepository.findById(despesaId);
     if (!current) throw new NotFoundError("Despesa no trobada");
     if (!current.fitxerKey) return;

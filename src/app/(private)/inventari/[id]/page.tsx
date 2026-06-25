@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { NotFoundError } from "@/domain/errors";
 import { valorNet } from "@/domain/amortitzacio";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { inventariService } from "@/services/inventari-service";
 import { proveidorsService } from "@/services/proveidors-service";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -44,6 +47,8 @@ export default async function InventariDetailPage({
 
   const proveidors = await proveidorsService.list({ includeInactius: false });
   const locked = be.numAmortitzacions > 0;
+  // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  const canEdit = potGestionarDomini(await currentRole());
   const updateAction = updateInventariAction.bind(null, id);
 
   return (
@@ -97,6 +102,8 @@ export default async function InventariDetailPage({
         />
       </div>
 
+      {!canEdit && <ModeConsultaBanner />}
+
       <InventariForm
         action={updateAction}
         defaults={{
@@ -109,25 +116,28 @@ export default async function InventariDetailPage({
         }}
         proveidors={proveidors}
         locked={locked}
+        readOnly={!canEdit}
       />
 
-      <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-        <h2 className="text-xl">Estat del bé</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Un bé de baixa deixa d&apos;amortitzar-se però es conserva a
-          l&apos;històric. L&apos;eliminació (lògica) només és per a béns creats
-          per error i no és possible si té amortitzacions generades.
-        </p>
-        <EstatButtons
-          id={be.id}
-          numInventari={be.numInventari}
-          estat={be.estat}
-          numAmortitzacions={be.numAmortitzacions}
-          baixaAction={baixaInventariAction}
-          reactivarAction={reactivarInventariAction}
-          eliminarAction={eliminarInventariAction}
-        />
-      </section>
+      {canEdit && (
+        <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
+          <h2 className="text-xl">Estat del bé</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Un bé de baixa deixa d&apos;amortitzar-se però es conserva a
+            l&apos;històric. L&apos;eliminació (lògica) només és per a béns creats
+            per error i no és possible si té amortitzacions generades.
+          </p>
+          <EstatButtons
+            id={be.id}
+            numInventari={be.numInventari}
+            estat={be.estat}
+            numAmortitzacions={be.numAmortitzacions}
+            baixaAction={baixaInventariAction}
+            reactivarAction={reactivarInventariAction}
+            eliminarAction={eliminarInventariAction}
+          />
+        </section>
+      )}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
 import { inventariRepository } from "@/repositories/inventari-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
 import { auditService } from "./audit-service";
-import { requireSession } from "./auth-service";
+import { requireManager, requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
 export const tipusDespesaService = {
@@ -27,7 +27,7 @@ export const tipusDespesaService = {
   },
 
   async create(input: unknown) {
-    const session = await requireSession();
+    const session = await requireManager();
     const parsed = tipusDespesaInputSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -56,7 +56,7 @@ export const tipusDespesaService = {
   },
 
   async update(id: string, input: unknown) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await tipusDespesaRepository.findById(id);
     if (!current) throw new NotFoundError("Tipus de despesa no trobat");
 
@@ -97,7 +97,7 @@ export const tipusDespesaService = {
   },
 
   async setActiu(id: string, actiu: boolean) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await tipusDespesaRepository.findById(id);
     if (!current) throw new NotFoundError("Tipus de despesa no trobat");
     if (current.actiu === actiu) return current;

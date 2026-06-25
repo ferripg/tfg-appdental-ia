@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import {
   EMPTY_TIPUS_DESPESA_DEFAULTS,
   TipusDespesaForm,
 } from "../_components/tipus-despesa-form";
 import { createTipusDespesaAction } from "./actions";
 
-export default function NouTipusDespesaPage() {
+export default async function NouTipusDespesaPage() {
+  // RBAC: crear catàlegs és cosa de MANAGER/ADMIN. Amaguem la ruta a OPERARI.
+  if (!potGestionarDomini(await currentRole())) notFound();
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">

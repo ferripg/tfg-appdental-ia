@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
 import { NotFoundError } from "@/domain/errors";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
 import { SetActiuButton } from "../_components/desactivar-button";
 import { TIPUS_DESPESA_TOAST_MAP } from "../_components/toast-map";
@@ -30,6 +33,8 @@ export default async function TipusDespesaDetailPage({
     throw err;
   }
 
+  // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  const canEdit = potGestionarDomini(await currentRole());
   const updateAction = updateTipusDespesaAction.bind(null, id);
 
   return (
@@ -80,6 +85,8 @@ export default async function TipusDespesaDetailPage({
         </section>
       )}
 
+      {!canEdit && <ModeConsultaBanner />}
+
       <TipusDespesaForm
         action={updateAction}
         defaults={{
@@ -93,24 +100,27 @@ export default async function TipusDespesaDetailPage({
         }}
         submitLabel="Desa els canvis"
         cancelHref="/tipus-despesa"
+        readOnly={!canEdit}
       />
 
-      <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-        <h2 className="text-xl">Estat del tipus de despesa</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Desactivar el tipus el treu de les opcions a l&apos;hora de crear
-          noves despeses, però manté intactes totes les despeses ja
-          registrades. Pots reactivar-lo quan vulguis.
-        </p>
-        <div>
-          <SetActiuButton
-            id={tipus.id}
-            descripcio={tipus.descripcio}
-            actiu={tipus.actiu}
-            action={setActiuAction}
-          />
-        </div>
-      </section>
+      {canEdit && (
+        <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
+          <h2 className="text-xl">Estat del tipus de despesa</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Desactivar el tipus el treu de les opcions a l&apos;hora de crear
+            noves despeses, però manté intactes totes les despeses ja
+            registrades. Pots reactivar-lo quan vulguis.
+          </p>
+          <div>
+            <SetActiuButton
+              id={tipus.id}
+              descripcio={tipus.descripcio}
+              actiu={tipus.actiu}
+              action={setActiuAction}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

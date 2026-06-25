@@ -9,7 +9,7 @@ import {
 } from "@/domain/proveidor";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { auditService } from "./audit-service";
-import { requireSession } from "./auth-service";
+import { requireManager, requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
 export const proveidorsService = {
@@ -26,7 +26,7 @@ export const proveidorsService = {
   },
 
   async create(input: unknown) {
-    const session = await requireSession();
+    const session = await requireManager();
     const parsed = proveidorInputSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -52,7 +52,7 @@ export const proveidorsService = {
   },
 
   async update(id: string, input: unknown) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await proveidorsRepository.findById(id);
     if (!current) throw new NotFoundError("Proveïdor no trobat");
 
@@ -84,7 +84,7 @@ export const proveidorsService = {
   },
 
   async setActiu(id: string, actiu: boolean) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await proveidorsRepository.findById(id);
     if (!current) throw new NotFoundError("Proveïdor no trobat");
     if (current.actiu === actiu) return current;

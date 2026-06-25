@@ -10,7 +10,7 @@ import {
 import { inventariRepository } from "@/repositories/inventari-repository";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { auditService } from "./audit-service";
-import { requireSession } from "./auth-service";
+import { requireManager, requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
 export const inventariService = {
@@ -36,7 +36,7 @@ export const inventariService = {
    * proveïdor i número de factura. Si no té amortitzacions, tot és editable.
    */
   async update(id: string, input: unknown) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat === "ELIMINAT") {
@@ -113,7 +113,7 @@ export const inventariService = {
 
   /** Dona de baixa un bé (deixa d'amortitzar). Registra l'any de baixa. */
   async baixa(id: string) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat === "ELIMINAT") {
@@ -132,7 +132,7 @@ export const inventariService = {
 
   /** Reverteix una baixa: el bé torna a estar actiu i amortitzable. */
   async reactivar(id: string) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat !== "BAIXA") return current;
@@ -152,7 +152,7 @@ export const inventariService = {
    * informes d'exercicis.
    */
   async eliminar(id: string) {
-    const session = await requireSession();
+    const session = await requireManager();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat === "ELIMINAT") return current;

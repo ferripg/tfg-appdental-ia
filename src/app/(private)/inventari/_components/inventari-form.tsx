@@ -42,6 +42,8 @@ type Props = {
   proveidors: Array<{ id: string; nif: string; nom: string }>;
   /** Si el bé ja té amortitzacions, import/%/data queden bloquejats. */
   locked: boolean;
+  /** Mode consulta (només lectura): desactiva tots els camps i amaga el desat. */
+  readOnly?: boolean;
 };
 
 function FieldError({ messages }: { messages?: string[] }) {
@@ -56,7 +58,13 @@ function FieldError({ messages }: { messages?: string[] }) {
 const SELECT_CLASS =
   "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50";
 
-export function InventariForm({ action, defaults, proveidors, locked }: Props) {
+export function InventariForm({
+  action,
+  defaults,
+  proveidors,
+  locked,
+  readOnly = false,
+}: Props) {
   const [state, formAction, pending] = useActionState<
     InventariFormState,
     FormData
@@ -65,6 +73,7 @@ export function InventariForm({ action, defaults, proveidors, locked }: Props) {
 
   return (
     <form action={formAction} className="space-y-6">
+      <fieldset disabled={readOnly} className="min-w-0 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Dades del bé</CardTitle>
@@ -212,8 +221,9 @@ export function InventariForm({ action, defaults, proveidors, locked }: Props) {
           </div>
         </CardContent>
       </Card>
+      </fieldset>
 
-      {state?.error && (
+      {!readOnly && state?.error && (
         <p
           role="alert"
           aria-live="polite"
@@ -223,21 +233,29 @@ export function InventariForm({ action, defaults, proveidors, locked }: Props) {
         </p>
       )}
 
-      <div className="flex items-center justify-end gap-3">
-        <Button variant="ghost" asChild>
-          <Link href="/inventari">Cancel·la</Link>
-        </Button>
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Loader2 className="animate-spin" />
-              Desant…
-            </>
-          ) : (
-            "Desa els canvis"
-          )}
-        </Button>
-      </div>
+      {readOnly ? (
+        <div className="flex items-center justify-end">
+          <Button variant="outline" asChild>
+            <Link href="/inventari">Torna</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="ghost" asChild>
+            <Link href="/inventari">Cancel·la</Link>
+          </Button>
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Desant…
+              </>
+            ) : (
+              "Desa els canvis"
+            )}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

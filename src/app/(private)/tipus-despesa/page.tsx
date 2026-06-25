@@ -2,6 +2,8 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { ResultToast } from "@/components/app/result-toast";
 import { Button } from "@/components/ui/button";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
 import { TIPUS_DESPESA_TOAST_MAP } from "./_components/toast-map";
 import { TipusDespesaFilters } from "./_components/tipus-despesa-filters";
@@ -23,6 +25,7 @@ export default async function TipusDespesaPage({
   const includeInactius = inactius === "1";
 
   const tipus = await tipusDespesaService.list({ search, includeInactius });
+  const canManage = potGestionarDomini(await currentRole());
 
   return (
     <div className="space-y-8">
@@ -42,12 +45,14 @@ export default async function TipusDespesaPage({
             Pla General Comptable.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/tipus-despesa/nou">
-            <Plus className="size-4" />
-            Nou tipus
-          </Link>
-        </Button>
+        {canManage && (
+          <Button asChild>
+            <Link href="/tipus-despesa/nou">
+              <Plus className="size-4" />
+              Nou tipus
+            </Link>
+          </Button>
+        )}
       </div>
 
       <TipusDespesaFilters

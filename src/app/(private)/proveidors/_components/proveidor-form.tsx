@@ -48,6 +48,8 @@ type ProveidorFormProps = {
   defaults: FieldDefaults;
   submitLabel: string;
   cancelHref: string;
+  /** Mode consulta (només lectura): desactiva tots els camps i amaga el desat. */
+  readOnly?: boolean;
 };
 
 function FieldError({ messages }: { messages?: string[] }) {
@@ -64,6 +66,7 @@ export function ProveidorForm({
   defaults,
   submitLabel,
   cancelHref,
+  readOnly = false,
 }: ProveidorFormProps) {
   const [state, formAction, pending] = useActionState<
     ProveidorFormState,
@@ -73,6 +76,7 @@ export function ProveidorForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      <fieldset disabled={readOnly} className="min-w-0 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Identificació</CardTitle>
@@ -256,8 +260,9 @@ export function ProveidorForm({
           </div>
         </CardContent>
       </Card>
+      </fieldset>
 
-      {state?.error && (
+      {!readOnly && state?.error && (
         <p
           role="alert"
           aria-live="polite"
@@ -267,21 +272,29 @@ export function ProveidorForm({
         </p>
       )}
 
-      <div className="flex items-center justify-end gap-3">
-        <Button variant="ghost" asChild>
-          <Link href={cancelHref}>Cancel·la</Link>
-        </Button>
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Loader2 className="animate-spin" />
-              Desant…
-            </>
-          ) : (
-            submitLabel
-          )}
-        </Button>
-      </div>
+      {readOnly ? (
+        <div className="flex items-center justify-end">
+          <Button variant="outline" asChild>
+            <Link href={cancelHref}>Torna</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="ghost" asChild>
+            <Link href={cancelHref}>Cancel·la</Link>
+          </Button>
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Desant…
+              </>
+            ) : (
+              submitLabel
+            )}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
