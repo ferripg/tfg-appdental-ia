@@ -1,6 +1,7 @@
 import type { EstatAmortitzacions } from "@/domain/amortitzacio";
 import { BusinessError } from "@/domain/errors";
 import { amortitzacionsRepository } from "@/repositories/amortitzacions-repository";
+import { auditService } from "./audit-service";
 import { requireSession } from "./auth-service";
 
 /**
@@ -39,7 +40,7 @@ export const amortitzacionsService = {
    * exercici (seqüencial, no es poden saltar anys).
    */
   async generar(exercici: number) {
-    await requireSession();
+    const session = await requireSession();
     const { proximExercici } = await calcularEstat();
 
     if (proximExercici === null) {
@@ -52,7 +53,20 @@ export const amortitzacionsService = {
         `Només pots generar l'exercici ${proximExercici} (no es poden saltar anys).`,
       );
     }
-    return amortitzacionsRepository.generarExercici(exercici);
+    const resultat = await amortitzacionsRepository.generarExercici(exercici);
+
+    // Auditoria: generació d'un exercici d'amortitzacions (operació fiscal).
+    await auditService.record(session.user.id, "AMORTITZACIONS_GENERATED", {
+      entitat: "Amortitzacio",
+      entitatId: String(exercici),
+      metadata: {
+        exercici,
+        bensAmortitzats: resultat.bensAmortitzats,
+        totalAmortitzat: resultat.totalAmortitzat,
+      },
+    });
+
+    return resultat;
   },
 
   /**
@@ -60,7 +74,7 @@ export const amortitzacionsService = {
    * ordre invers), per mantenir la coherència de l'acumulat.
    */
   async retrocedir(exercici: number) {
-    await requireSession();
+    const session = await requireSession();
     const ultim = await amortitzacionsRepository.maxExerciciGenerat();
 
     if (ultim === null) {
@@ -71,6 +85,15 @@ export const amortitzacionsService = {
         `Només pots retrocedir l'últim exercici generat (${ultim}).`,
       );
     }
-    return amortitzacionsRepository.retrocedirExercici(exercici);
+    const resultat = await amortitzacionsRepository.retrocedirExercici(exercici);
+
+    // Auditoria: retrocés d'un exercici d'amortitzacions (operació fiscal).
+    await auditService.record(session.user.id, "AMORTITZACIONS_RETROCEDIDES", {
+      entitat: "Amortitzacio",
+      entitatId: String(exercici),
+      metadata: { exercici, revertits: resultat.revertits },
+    });
+
+    return resultat;
   },
 };

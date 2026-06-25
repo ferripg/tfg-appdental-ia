@@ -13,6 +13,7 @@ import { facturesRepository } from "@/repositories/factures-repository";
 import { inventariRepository } from "@/repositories/inventari-repository";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
+import { auditService } from "./audit-service";
 import { requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
@@ -113,11 +114,18 @@ export const despesesService = {
       await inventariRepository.createFromDespesa(created.id);
     }
 
+    // Auditoria: alta de despesa (operació financera).
+    await auditService.record(session.user.id, "CREATE", {
+      entitat: "Despesa",
+      entitatId: created.id,
+      metadata: { import: created.import, numFactura: created.numFactura },
+    });
+
     return created;
   },
 
   async update(id: string, input: unknown) {
-    await requireSession();
+    const session = await requireSession();
     const current = await despesesRepository.findById(id);
     if (!current) throw new NotFoundError("Despesa no trobada");
 
@@ -181,11 +189,18 @@ export const despesesService = {
       await inventariRepository.createFromDespesa(id);
     }
 
+    // Auditoria: modificació de despesa (operació financera).
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "Despesa",
+      entitatId: id,
+      metadata: { import: updated.import, numFactura: updated.numFactura },
+    });
+
     return updated;
   },
 
   async delete(id: string) {
-    await requireSession();
+    const session = await requireSession();
     const current = await despesesRepository.findById(id);
     if (!current) throw new NotFoundError("Despesa no trobada");
 
@@ -219,6 +234,15 @@ export const despesesService = {
       }
       throw err;
     }
+
+    // Auditoria: esborrat de despesa (només si el delete ha reeixit; si el
+    // catch ha rellançat, no s'arriba aquí). Desem les dades clau per deixar
+    // rastre del que s'ha eliminat.
+    await auditService.record(session.user.id, "DELETE", {
+      entitat: "Despesa",
+      entitatId: id,
+      metadata: { import: current.import, numFactura: current.numFactura },
+    });
   },
 
   async uploadInvoice(despesaId: string, file: unknown) {

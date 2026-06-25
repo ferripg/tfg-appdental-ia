@@ -9,6 +9,7 @@ import {
 } from "@/domain/inventari";
 import { inventariRepository } from "@/repositories/inventari-repository";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
+import { auditService } from "./audit-service";
 import { requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
@@ -35,7 +36,7 @@ export const inventariService = {
    * proveïdor i número de factura. Si no té amortitzacions, tot és editable.
    */
   async update(id: string, input: unknown) {
-    await requireSession();
+    const session = await requireSession();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat === "ELIMINAT") {
@@ -88,35 +89,60 @@ export const inventariService = {
           },
         );
       }
-      return inventariRepository.updateSafeFields(id, {
+      const actualitzat = await inventariRepository.updateSafeFields(id, {
         descripcio: data.descripcio,
         proveidorId: data.proveidorId,
         numFactura: data.numFactura,
       });
+      await auditService.record(session.user.id, "UPDATE", {
+        entitat: "Inventari",
+        entitatId: id,
+        metadata: { num: current.numInventari, camps: "segurs" },
+      });
+      return actualitzat;
     }
 
-    return inventariRepository.update(id, data);
+    const actualitzat = await inventariRepository.update(id, data);
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "Inventari",
+      entitatId: id,
+      metadata: { num: current.numInventari },
+    });
+    return actualitzat;
   },
 
   /** Dona de baixa un bé (deixa d'amortitzar). Registra l'any de baixa. */
   async baixa(id: string) {
-    await requireSession();
+    const session = await requireSession();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat === "ELIMINAT") {
       throw new BusinessError("Un bé eliminat no es pot donar de baixa");
     }
     if (current.estat === "BAIXA") return current;
-    return inventariRepository.setEstat(id, "BAIXA", new Date().getUTCFullYear());
+    const anyBaixa = new Date().getUTCFullYear();
+    const actualitzat = await inventariRepository.setEstat(id, "BAIXA", anyBaixa);
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "Inventari",
+      entitatId: id,
+      metadata: { num: current.numInventari, estat: "BAIXA", anyBaixa },
+    });
+    return actualitzat;
   },
 
   /** Reverteix una baixa: el bé torna a estar actiu i amortitzable. */
   async reactivar(id: string) {
-    await requireSession();
+    const session = await requireSession();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat !== "BAIXA") return current;
-    return inventariRepository.setEstat(id, "ACTIU", null);
+    const actualitzat = await inventariRepository.setEstat(id, "ACTIU", null);
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "Inventari",
+      entitatId: id,
+      metadata: { num: current.numInventari, estat: "ACTIU" },
+    });
+    return actualitzat;
   },
 
   /**
@@ -126,7 +152,7 @@ export const inventariService = {
    * informes d'exercicis.
    */
   async eliminar(id: string) {
-    await requireSession();
+    const session = await requireSession();
     const current = await inventariRepository.findById(id);
     if (!current) throw new NotFoundError("Bé d'inventari no trobat");
     if (current.estat === "ELIMINAT") return current;
@@ -135,6 +161,16 @@ export const inventariService = {
         "Aquest bé té amortitzacions generades; retrocedeix-les abans d'eliminar-lo.",
       );
     }
-    return inventariRepository.setEstat(id, "ELIMINAT", current.anyBaixa);
+    const actualitzat = await inventariRepository.setEstat(
+      id,
+      "ELIMINAT",
+      current.anyBaixa,
+    );
+    await auditService.record(session.user.id, "DELETE", {
+      entitat: "Inventari",
+      entitatId: id,
+      metadata: { num: current.numInventari },
+    });
+    return actualitzat;
   },
 };

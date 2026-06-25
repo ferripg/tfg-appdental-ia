@@ -12,6 +12,7 @@ import {
 } from "@/domain/user";
 import { auth } from "@/lib/auth";
 import { usersRepository } from "@/repositories/users-repository";
+import { auditService } from "./audit-service";
 import { requireAdmin } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
@@ -56,7 +57,7 @@ export const usersService = {
    * Sprint 3+ if we ever need impersonation or full ban support.
    */
   async create(input: unknown) {
-    await requireAdmin();
+    const session = await requireAdmin();
 
     const parsed = userCreateSchema.safeParse(input);
     if (!parsed.success) {
@@ -107,11 +108,18 @@ export const usersService = {
     // the new user has zero live sessions until they log in themselves.
     await usersRepository.dropAllSessionsFor(result.user.id);
 
+    // Auditoria: alta d'usuari (qui l'ha creat, amb quin email i rol).
+    await auditService.record(session.user.id, "CREATE", {
+      entitat: "User",
+      entitatId: result.user.id,
+      metadata: { email, role },
+    });
+
     return usersRepository.findById(result.user.id);
   },
 
   async updateProfile(id: string, input: unknown) {
-    await requireAdmin();
+    const session = await requireAdmin();
     const current = await usersRepository.findById(id);
     if (!current) throw new NotFoundError("Usuari no trobat");
 
@@ -132,7 +140,16 @@ export const usersService = {
       }
     }
 
-    return usersRepository.updateProfile(id, parsed.data);
+    const updated = await usersRepository.updateProfile(id, parsed.data);
+
+    // Auditoria: modificació de dades de perfil.
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "User",
+      entitatId: id,
+      metadata: { email: parsed.data.email },
+    });
+
+    return updated;
   },
 
   async setRole(id: string, role: UserRole) {
@@ -161,7 +178,16 @@ export const usersService = {
       }
     }
 
-    return usersRepository.setRole(id, role);
+    const updated = await usersRepository.setRole(id, role);
+
+    // Auditoria: canvi de rol (esdeveniment de seguretat: desem de→a).
+    await auditService.record(session.user.id, "ROLE_CHANGED", {
+      entitat: "User",
+      entitatId: id,
+      metadata: { de: target.role, a: role },
+    });
+
+    return updated;
   },
 
   async setActiu(id: string, actiu: boolean) {
@@ -197,6 +223,13 @@ export const usersService = {
     if (!actiu) {
       await usersRepository.dropAllSessionsFor(id);
     }
+
+    // Auditoria: activació/desactivació del compte (esdeveniment de seguretat).
+    await auditService.record(
+      session.user.id,
+      actiu ? "USER_UNBLOCKED" : "USER_BLOCKED",
+      { entitat: "User", entitatId: id },
+    );
 
     return updated;
   },

@@ -9,6 +9,7 @@ import {
 } from "@/domain/tipus-despesa";
 import { inventariRepository } from "@/repositories/inventari-repository";
 import { tipusDespesaRepository } from "@/repositories/tipus-despesa-repository";
+import { auditService } from "./audit-service";
 import { requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
@@ -26,7 +27,7 @@ export const tipusDespesaService = {
   },
 
   async create(input: unknown) {
-    await requireSession();
+    const session = await requireSession();
     const parsed = tipusDespesaInputSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -46,11 +47,16 @@ export const tipusDespesaService = {
     if (created.esAmortitzable) {
       await inventariRepository.generateMissingForTipus(created.id);
     }
+    await auditService.record(session.user.id, "CREATE", {
+      entitat: "TipusDespesa",
+      entitatId: created.id,
+      metadata: { codi: created.codi, esAmortitzable: created.esAmortitzable },
+    });
     return created;
   },
 
   async update(id: string, input: unknown) {
-    await requireSession();
+    const session = await requireSession();
     const current = await tipusDespesaRepository.findById(id);
     if (!current) throw new NotFoundError("Tipus de despesa no trobat");
 
@@ -81,14 +87,26 @@ export const tipusDespesaService = {
       await inventariRepository.generateMissingForTipus(id);
     }
 
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "TipusDespesa",
+      entitatId: id,
+      metadata: { codi: updated.codi, esAmortitzable: updated.esAmortitzable },
+    });
+
     return updated;
   },
 
   async setActiu(id: string, actiu: boolean) {
-    await requireSession();
+    const session = await requireSession();
     const current = await tipusDespesaRepository.findById(id);
     if (!current) throw new NotFoundError("Tipus de despesa no trobat");
     if (current.actiu === actiu) return current;
-    return tipusDespesaRepository.setActiu(id, actiu);
+    const updated = await tipusDespesaRepository.setActiu(id, actiu);
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "TipusDespesa",
+      entitatId: id,
+      metadata: { codi: current.codi, actiu },
+    });
+    return updated;
   },
 };

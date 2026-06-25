@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { AccountLockedError } from "@/domain/errors";
 import { prisma } from "@/repositories/prisma-client";
+import { auditService } from "@/services/audit-service";
 import { loginSecurityService } from "@/services/login-security-service";
 
 const SIGN_IN_EMAIL_PATH = "/sign-in/email";
@@ -15,6 +16,18 @@ function emailFromBody(body: unknown): string | null {
     if (typeof email === "string") return email;
   }
   return null;
+}
+
+/**
+ * IP del client a partir de les capçaleres del hook. Darrere de Nginx,
+ * `X-Forwarded-For` porta "client, proxy…": agafem la primera entrada. Es fa
+ * inline (i no via `request-context`) per no acoblar `lib/auth` a
+ * `next/headers`: aquí ja tenim l'objecte de capçaleres del context.
+ */
+function ipFromHeaders(headers: Headers | undefined): string | null {
+  const xff = headers?.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0]?.trim() || null;
+  return headers?.get("x-real-ip") ?? null;
 }
 
 export const auth = betterAuth({
@@ -75,16 +88,27 @@ export const auth = betterAuth({
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== SIGN_IN_EMAIL_PATH) return;
 
+      const ip = ipFromHeaders(ctx.headers);
       const newSession = ctx.context.newSession;
       if (newSession) {
         await loginSecurityService.registerSuccessfulLogin(
           newSession.user.id,
         );
+        // Auditoria: inici de sessió correcte. `record` mai llança.
+        await auditService.record(newSession.user.id, "LOGIN_OK", { ip });
         return;
       }
 
       const email = emailFromBody(ctx.body);
-      if (email) await loginSecurityService.registerFailedLogin(email);
+      if (email) {
+        await loginSecurityService.registerFailedLogin(email);
+        // Auditoria: intent fallit. No en sabem l'usuari (userId null);
+        // desem l'email provat a `metadata` per poder-hi fer seguiment.
+        await auditService.record(null, "LOGIN_FAIL", {
+          ip,
+          metadata: { email },
+        });
+      }
     }),
   },
   // nextCookies() must be the LAST plugin: it wraps every response and

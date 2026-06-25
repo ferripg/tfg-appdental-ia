@@ -13,6 +13,7 @@ const PRIVATE_PREFIXES = [
   "/tipus-despesa",
   "/despeses",
   "/usuaris",
+  "/auditoria",
 ];
 
 function isPrivate(pathname: string): boolean {
@@ -41,5 +42,6 @@ export const config = {
     "/tipus-despesa/:path*",
     "/despeses/:path*",
     "/usuaris/:path*",
+    "/auditoria/:path*",
   ],
 };

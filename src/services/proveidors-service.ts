@@ -8,6 +8,7 @@ import {
   proveidorInputSchema,
 } from "@/domain/proveidor";
 import { proveidorsRepository } from "@/repositories/proveidors-repository";
+import { auditService } from "./audit-service";
 import { requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
@@ -25,7 +26,7 @@ export const proveidorsService = {
   },
 
   async create(input: unknown) {
-    await requireSession();
+    const session = await requireSession();
     const parsed = proveidorInputSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -41,11 +42,17 @@ export const proveidorsService = {
       });
     }
 
-    return proveidorsRepository.create(parsed.data);
+    const created = await proveidorsRepository.create(parsed.data);
+    await auditService.record(session.user.id, "CREATE", {
+      entitat: "Proveidor",
+      entitatId: created.id,
+      metadata: { nom: created.nom, nif: created.nif },
+    });
+    return created;
   },
 
   async update(id: string, input: unknown) {
-    await requireSession();
+    const session = await requireSession();
     const current = await proveidorsRepository.findById(id);
     if (!current) throw new NotFoundError("Proveïdor no trobat");
 
@@ -67,14 +74,26 @@ export const proveidorsService = {
       }
     }
 
-    return proveidorsRepository.update(id, parsed.data);
+    const updated = await proveidorsRepository.update(id, parsed.data);
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "Proveidor",
+      entitatId: id,
+      metadata: { nom: updated.nom, nif: updated.nif },
+    });
+    return updated;
   },
 
   async setActiu(id: string, actiu: boolean) {
-    await requireSession();
+    const session = await requireSession();
     const current = await proveidorsRepository.findById(id);
     if (!current) throw new NotFoundError("Proveïdor no trobat");
     if (current.actiu === actiu) return current;
-    return proveidorsRepository.setActiu(id, actiu);
+    const updated = await proveidorsRepository.setActiu(id, actiu);
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "Proveidor",
+      entitatId: id,
+      metadata: { nom: current.nom, actiu },
+    });
+    return updated;
   },
 };

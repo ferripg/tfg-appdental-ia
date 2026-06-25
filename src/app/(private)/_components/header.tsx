@@ -23,6 +23,7 @@ const NAV_ITEMS: {
   { label: "Amortitzacions", href: "/amortitzacions" },
   { label: "Reports", href: "#", disabled: true },
   { label: "Usuaris", href: "/usuaris", adminOnly: true },
+  { label: "Auditoria", href: "/auditoria", adminOnly: true },
 ];
 
 export function Header({ user }: { user: SessionUser }) {
