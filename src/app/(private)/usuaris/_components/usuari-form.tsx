@@ -132,7 +132,9 @@ export function UsuariForm({
           <CardDescription>
             {mode === "create"
               ? "Tria el rol i defineix una contrasenya temporal. L'usuari l'haurà de canviar al primer accés."
-              : "El rol i l'estat es canvien des dels controls específics del detall (a sota del formulari)."}
+              : roleEditable
+                ? "Defineix el rol i si l'usuari pot iniciar sessió."
+                : "No pots canviar el teu propi rol ni el teu estat."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -190,6 +192,12 @@ export function UsuariForm({
           )}
 
           <div>
+            {/* Marca que el camp `actiu` s'envia: distingeix "desmarcat"
+                (checkbox absent del FormData) de "no editable" (auto-edició),
+                perquè el servei sàpiga si ha de mantenir l'estat actual. */}
+            {actiuEditable && (
+              <input type="hidden" name="__actiuPresent" value="1" />
+            )}
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 id="actiu"

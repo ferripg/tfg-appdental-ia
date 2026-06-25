@@ -6,7 +6,6 @@ import {
 } from "@/domain/errors";
 import {
   type UserListFilters,
-  type UserRole,
   userCreateSchema,
   userUpdateSchema,
 } from "@/domain/user";
@@ -118,7 +117,20 @@ export const usersService = {
     return usersRepository.findById(result.user.id);
   },
 
-  async updateProfile(id: string, input: unknown) {
+  /**
+   * Edició unificada d'un usuari (IA-18): nom, email, rol i estat en una sola
+   * desada. Reuneix el que abans eren tres operacions separades (perfil, rol,
+   * estat) perquè la UI tingui un únic botó "Desa els canvis" a baix.
+   *
+   * Guards de negoci:
+   * - Un admin no pot canviar el SEU propi rol ni estat: en aquest cas els
+   *   controls van desactivats i no s'envien, així que es mantenen els valors
+   *   actuals (no canvien, no es llança error).
+   * - No es pot deixar el sistema sense cap administrador ACTIU: si l'usuari
+   *   és l'únic admin actiu i la desada el degradaria o el desactivaria, es
+   *   rebutja amb errors de camp.
+   */
+  async update(id: string, input: unknown) {
     const session = await requireAdmin();
     const current = await usersRepository.findById(id);
     if (!current) throw new NotFoundError("Usuari no trobat");
@@ -130,9 +142,10 @@ export const usersService = {
         flattenZodErrors(parsed.error),
       );
     }
+    const data = parsed.data;
 
-    if (parsed.data.email !== current.email) {
-      const dup = await usersRepository.findByEmail(parsed.data.email);
+    if (data.email !== current.email) {
+      const dup = await usersRepository.findByEmail(data.email);
       if (dup && dup.id !== id) {
         throw new BusinessError("L'email ja està registrat", {
           email: ["Ja existeix un usuari amb aquest email"],
@@ -140,96 +153,69 @@ export const usersService = {
       }
     }
 
-    const updated = await usersRepository.updateProfile(id, parsed.data);
+    // Auto-edició: rol i estat propis no es toquen (controls desactivats, no
+    // arriben al formulari) → es mantenen els valors actuals.
+    const isSelf = session.user.id === id;
+    const targetRole = isSelf ? current.role : (data.role ?? current.role);
+    const targetActiu = isSelf ? current.actiu : (data.actiu ?? current.actiu);
+    const roleChanged = targetRole !== current.role;
+    const actiuChanged = targetActiu !== current.actiu;
 
-    // Auditoria: modificació de dades de perfil.
-    await auditService.record(session.user.id, "UPDATE", {
-      entitat: "User",
-      entitatId: id,
-      metadata: { email: parsed.data.email },
-    });
-
-    return updated;
-  },
-
-  async setRole(id: string, role: UserRole) {
-    const session = await requireAdmin();
-
-    if (session.user.id === id) {
-      throw new BusinessError("No pots canviar el teu propi rol", {
-        role: ["Demana-ho a un altre administrador"],
-      });
-    }
-
-    const target = await usersRepository.findById(id);
-    if (!target) throw new NotFoundError("Usuari no trobat");
-    if (target.role === role) return target;
-
-    // Last-admin protection: refuse to degrade the only remaining active
-    // administrator. Compares against `<= 1` because the target is still
-    // counted as active at this moment.
-    if (target.role === "ADMIN" && role !== "ADMIN" && target.actiu) {
-      const remaining = await usersRepository.countActiveAdmins();
-      if (remaining <= 1) {
-        throw new BusinessError(
-          "Hi ha d'haver com a mínim un administrador actiu",
-          { role: ["No pots degradar l'únic administrador actiu"] },
-        );
+    // Protecció de l'últim administrador actiu.
+    if (current.role === "ADMIN" && current.actiu) {
+      const seguiraSentAdminActiu = targetRole === "ADMIN" && targetActiu;
+      if (!seguiraSentAdminActiu) {
+        const remaining = await usersRepository.countActiveAdmins();
+        if (remaining <= 1) {
+          throw new BusinessError(
+            "Hi ha d'haver com a mínim un administrador actiu",
+            {
+              ...(roleChanged
+                ? { role: ["No pots degradar l'únic administrador actiu"] }
+                : {}),
+              ...(actiuChanged
+                ? { actiu: ["No pots desactivar l'únic administrador actiu"] }
+                : {}),
+            },
+          );
+        }
       }
     }
 
-    const updated = await usersRepository.setRole(id, role);
-
-    // Auditoria: canvi de rol (esdeveniment de seguretat: desem de→a).
-    await auditService.record(session.user.id, "ROLE_CHANGED", {
-      entitat: "User",
-      entitatId: id,
-      metadata: { de: target.role, a: role },
+    const updated = await usersRepository.updateFull(id, {
+      name: data.name,
+      email: data.email,
+      role: targetRole,
+      actiu: targetActiu,
     });
 
-    return updated;
-  },
-
-  async setActiu(id: string, actiu: boolean) {
-    const session = await requireAdmin();
-
-    if (session.user.id === id && !actiu) {
-      throw new BusinessError("No pots desactivar el teu propi usuari", {
-        actiu: ["Demana-ho a un altre administrador"],
-      });
-    }
-
-    const target = await usersRepository.findById(id);
-    if (!target) throw new NotFoundError("Usuari no trobat");
-    if (target.actiu === actiu) return target;
-
-    // Last-admin protection for deactivation: refuse if the target is the
-    // only active admin.
-    if (target.role === "ADMIN" && !actiu) {
-      const remaining = await usersRepository.countActiveAdmins();
-      if (remaining <= 1) {
-        throw new BusinessError(
-          "Hi ha d'haver com a mínim un administrador actiu",
-        );
-      }
-    }
-
-    const updated = await usersRepository.setActiu(id, actiu);
-
-    // En desactivar, expulsa l'usuari de qualsevol sessió viva: esborrem les
-    // seves files de Session perquè el següent `getSession` falli i el proxy
-    // el redirigeixi a /login. Sense això, un usuari ja loguejat seguiria
-    // operant fins que expirés la cookie tot i estar desactivat.
-    if (!actiu) {
+    // En desactivar, expulsa l'usuari de qualsevol sessió viva (el proxy el
+    // redirigirà a /login al pròxim request).
+    if (actiuChanged && !targetActiu) {
       await usersRepository.dropAllSessionsFor(id);
     }
 
-    // Auditoria: activació/desactivació del compte (esdeveniment de seguretat).
-    await auditService.record(
-      session.user.id,
-      actiu ? "USER_UNBLOCKED" : "USER_BLOCKED",
-      { entitat: "User", entitatId: id },
-    );
+    // Auditoria: sempre UPDATE; a més ROLE_CHANGED i/o USER_BLOCKED/UNBLOCKED
+    // segons què hagi canviat.
+    await auditService.record(session.user.id, "UPDATE", {
+      entitat: "User",
+      entitatId: id,
+      metadata: { email: data.email },
+    });
+    if (roleChanged) {
+      await auditService.record(session.user.id, "ROLE_CHANGED", {
+        entitat: "User",
+        entitatId: id,
+        metadata: { de: current.role, a: targetRole },
+      });
+    }
+    if (actiuChanged) {
+      await auditService.record(
+        session.user.id,
+        targetActiu ? "USER_UNBLOCKED" : "USER_BLOCKED",
+        { entitat: "User", entitatId: id },
+      );
+    }
 
     return updated;
   },

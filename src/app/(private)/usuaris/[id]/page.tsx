@@ -5,11 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { ForbiddenError, NotFoundError } from "@/domain/errors";
 import { requireAdmin } from "@/services/auth-service";
 import { usersService } from "@/services/users-service";
-import { RolSwitcher } from "../_components/rol-switcher";
-import { SetActiuButton } from "../_components/desactivar-button";
 import { UsuariForm } from "../_components/usuari-form";
 import { USUARIS_TOAST_MAP } from "../_components/toast-map";
-import { setActiuAction, setRoleAction, updateUsuariAction } from "./actions";
+import { updateUsuariAction } from "./actions";
 
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<{ msg?: string | string[] }>;
@@ -92,42 +90,11 @@ export default async function UsuariDetailPage({
           role: user.role,
           actiu: user.actiu,
         }}
+        roleEditable={!isSelf}
+        actiuEditable={!isSelf}
         submitLabel="Desa els canvis"
         cancelHref="/usuaris"
       />
-
-      <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-        <h2 className="text-xl">Rol de l&apos;usuari</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Tria el rol que ha de tenir aquest usuari. No pots canviar el teu
-          propi rol; tampoc pots degradar l&apos;únic administrador actiu.
-        </p>
-        <RolSwitcher
-          id={user.id}
-          label={user.name ?? user.email}
-          currentRole={user.role}
-          action={setRoleAction}
-          disabled={isSelf}
-        />
-      </section>
-
-      <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-        <h2 className="text-xl">Estat de l&apos;usuari</h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Desactivar l&apos;usuari el deixa sense poder iniciar sessió però
-          conserva tot el seu històric. Sempre pots reactivar-lo. No pots
-          desactivar el teu propi usuari ni l&apos;únic administrador actiu.
-        </p>
-        <div>
-          <SetActiuButton
-            id={user.id}
-            label={user.name ?? user.email}
-            actiu={user.actiu}
-            action={setActiuAction}
-            disabled={isSelf && user.actiu}
-          />
-        </div>
-      </section>
     </div>
   );
 }

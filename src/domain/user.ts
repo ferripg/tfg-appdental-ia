@@ -48,13 +48,18 @@ export const userCreateSchema = z.object({
 });
 
 /**
- * Schema for admin-edited profile data. Password is NOT here (reset is
- * UC-8, out of scope). Role and `actiu` move through dedicated endpoints
- * to keep their business rules (self-edit, last-admin) isolated.
+ * Schema for admin-edited users (IA-18). Password is NOT here (reset is
+ * UC-8, out of scope). `role` and `actiu` són OPCIONALS: en editar-se un
+ * mateix, els controls de rol/estat queden desactivats i no s'envien, de
+ * manera que el servei manté els valors actuals. Les regles de negoci
+ * (no canviar el propi rol, no deixar el sistema sense administrador actiu)
+ * es validen al servei `usersService.update`.
  */
 export const userUpdateSchema = z.object({
   name: nameSchema,
   email: emailSchema,
+  role: roleSchema.optional(),
+  actiu: z.boolean().optional(),
 });
 
 export type UserCreateInput = z.output<typeof userCreateSchema>;

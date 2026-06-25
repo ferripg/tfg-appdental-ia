@@ -87,29 +87,23 @@ export const usersRepository = {
     return toDomain(row);
   },
 
-  async updateProfile(
+  /**
+   * Desa en una sola escriptura tots els camps editables d'un usuari (nom,
+   * email, rol i estat). El servei és qui valida abans els guards de negoci
+   * (no canviar el propi rol, no deixar el sistema sense administrador actiu).
+   */
+  async updateFull(
     id: string,
-    data: { name: string; email: string },
+    data: { name: string; email: string; role: UserRole; actiu: boolean },
   ): Promise<User> {
     const row = await prisma.user.update({
       where: { id },
-      data: { name: data.name, email: data.email },
-    });
-    return toDomain(row);
-  },
-
-  async setRole(id: string, role: UserRole): Promise<User> {
-    const row = await prisma.user.update({
-      where: { id },
-      data: { role: role as Role },
-    });
-    return toDomain(row);
-  },
-
-  async setActiu(id: string, actiu: boolean): Promise<User> {
-    const row = await prisma.user.update({
-      where: { id },
-      data: { actiu },
+      data: {
+        name: data.name,
+        email: data.email,
+        role: data.role as Role,
+        actiu: data.actiu,
+      },
     });
     return toDomain(row);
   },

@@ -3,13 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { DomainError } from "@/domain/errors";
-import type { UserRole } from "@/domain/user";
 import { usersService } from "@/services/users-service";
 import type { UsuariFormState } from "../_components/usuari-form";
 
 /**
- * Bound at the page with `.bind(null, id)` so the form action signature
- * matches `useActionState`'s `(prev, formData) => Promise<state>` contract.
+ * Edició unificada d'un usuari (nom, email, rol i estat) des d'un sol
+ * formulari. Bound a la pàgina amb `.bind(null, id)` per encaixar amb el
+ * contracte `(prev, formData) => Promise<state>` de `useActionState`.
+ *
+ * El rol arriba com a string del <select> (absent si el control està
+ * desactivat per auto-edició). L'estat es marca amb un camp ocult
+ * `__actiuPresent`: si hi és, l'`actiu` ve del checkbox; si no (auto-edició),
+ * s'envia `undefined` i el servei manté el valor actual.
  */
 export async function updateUsuariAction(
   id: string,
@@ -17,7 +22,14 @@ export async function updateUsuariAction(
   formData: FormData,
 ): Promise<UsuariFormState> {
   try {
-    await usersService.updateProfile(id, Object.fromEntries(formData));
+    await usersService.update(id, {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      role: formData.get("role") || undefined,
+      actiu: formData.has("__actiuPresent")
+        ? formData.get("actiu") === "on"
+        : undefined,
+    });
   } catch (err) {
     if (err instanceof DomainError) {
       return { error: err.message, fieldErrors: err.fieldErrors };
@@ -29,42 +41,4 @@ export async function updateUsuariAction(
   revalidatePath("/usuaris");
   revalidatePath(`/usuaris/${id}`);
   redirect("/usuaris?msg=actualitzat");
-}
-
-export async function setRoleAction(
-  id: string,
-  role: UserRole,
-): Promise<void> {
-  try {
-    await usersService.setRole(id, role);
-  } catch (err) {
-    if (err instanceof DomainError) {
-      // Last-admin / self-edit refusal surfaces in the URL so the detail
-      // page can show a toast. We keep the user on the detail to retry.
-      redirect(`/usuaris/${id}?msg=error`);
-    }
-    console.error("[setRoleAction] error inesperat:", err);
-    redirect(`/usuaris/${id}?msg=error`);
-  }
-  revalidatePath("/usuaris");
-  revalidatePath(`/usuaris/${id}`);
-  redirect(`/usuaris/${id}?msg=rol-canviat`);
-}
-
-export async function setActiuAction(
-  id: string,
-  actiu: boolean,
-): Promise<void> {
-  try {
-    await usersService.setActiu(id, actiu);
-  } catch (err) {
-    if (err instanceof DomainError) {
-      redirect(`/usuaris/${id}?msg=error`);
-    }
-    console.error("[setActiuAction] error inesperat:", err);
-    redirect(`/usuaris/${id}?msg=error`);
-  }
-  revalidatePath("/usuaris");
-  revalidatePath(`/usuaris/${id}`);
-  redirect(`/usuaris?msg=${actiu ? "reactivat" : "desactivat"}`);
 }
