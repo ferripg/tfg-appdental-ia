@@ -53,13 +53,18 @@ export async function GET(request: Request) {
   }) as unknown as Parameters<typeof renderToBuffer>[0];
   const buffer = await renderToBuffer(element);
 
+  // Per defecte es descarrega (attachment); amb ?inline=1 es mostra al
+  // navegador (previsualització).
+  const inline = url.searchParams.get("inline") === "1";
+  const filename = `despeses-per-proveidor_${ymd(des)}_${ymd(fins)}.pdf`;
+
   // El Buffer de Node no encaixa directament amb el tipus BodyInit del DOM;
   // l'embolcallem en un Uint8Array (vista vàlida d'ArrayBuffer).
   return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="despeses-per-proveidor_${ymd(des)}_${ymd(fins)}.pdf"`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
       "Cache-Control": "no-store",
     },
   });

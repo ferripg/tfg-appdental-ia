@@ -131,7 +131,10 @@ export function InformePDF({ informe, des, fins }: Props) {
                 ) : null}
               </View>
 
-              <View style={styles.thead} fixed>
+              {/* SENSE `fixed`: la capçalera de columnes ha de sortir un cop
+                  per grup, en flux. `fixed` la repetiria a totes les pàgines i
+                  es duplicaria/apilaria entre grups. */}
+              <View style={styles.thead}>
                 <Text style={styles.cData}>Data</Text>
                 <Text style={styles.cFactura}>Núm. factura</Text>
                 <Text style={styles.cConcepte}>Concepte</Text>
