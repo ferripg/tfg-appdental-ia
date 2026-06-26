@@ -87,6 +87,7 @@ export const amortitzacionsRepository = {
         },
         select: {
           id: true,
+          dataAdquisicio: true,
           importAdquisicio: true,
           percAmortitzacio: true,
           importAmortitzat: true,
@@ -100,6 +101,8 @@ export const amortitzacionsRepository = {
           be.importAdquisicio.toString(),
           be.percAmortitzacio.toString(),
           be.importAmortitzat.toString(),
+          exercici,
+          be.dataAdquisicio,
         );
         if (quota === "0.00") continue; // % a 0 o ja totalment amortitzat
 

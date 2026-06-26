@@ -37,6 +37,33 @@ function fromCents(cents: bigint): string {
   return `${neg ? "-" : ""}${euros}.${rest.toString().padStart(2, "0")}`;
 }
 
+/** True si l'any és de traspàs (bixest). */
+function esDeTraspas(any: number): boolean {
+  return (any % 4 === 0 && any % 100 !== 0) || any % 400 === 0;
+}
+
+/** Dies totals de l'any: 366 si és de traspàs, 365 altrament. */
+function diesDeLAny(any: number): number {
+  return esDeTraspas(any) ? 366 : 365;
+}
+
+/**
+ * Dies que el bé ha estat en ús el seu primer any: des de la data d'adquisició
+ * fins al 31 de desembre del mateix any, AMBDÓS INCLOSOS. Tot en UTC (les dates
+ * es desen a mitjanit UTC), de manera que la diferència és un nombre exacte de
+ * dies. Ex.: 1-oct-2025 → 92 dies.
+ */
+function diesEnUsPrimerAny(dataAdquisicio: Date): number {
+  const any = dataAdquisicio.getUTCFullYear();
+  const inici = Date.UTC(
+    any,
+    dataAdquisicio.getUTCMonth(),
+    dataAdquisicio.getUTCDate(),
+  );
+  const fi = Date.UTC(any, 11, 31);
+  return Math.round((fi - inici) / 86_400_000) + 1;
+}
+
 /**
  * Quota d'amortització lineal d'un exercici per a un bé.
  *
@@ -44,6 +71,13 @@ function fromCents(cents: bigint): string {
  * s'ha amortitzat i SENSE passar-se del valor del bé (amortització fins a 0,
  * sense valor residual). L'últim exercici, doncs, pot quedar una quota
  * parcial que tanca exactament el valor.
+ *
+ * PRORRATEIG DEL PRIMER ANY (IA-16): l'exercici en què s'adquireix el bé NO
+ * computa la quota anual sencera, sinó proporcional als dies en ús aquell any:
+ *   quota_primer_any = quota_anual × dies_en_ús / dies_de_l'any
+ * La resta d'exercicis apliquen la quota sencera. Com que el primer any és
+ * parcial, el bé triga un exercici més a amortitzar-se i l'últim queda la
+ * quota que tanca exactament el valor (ho cobreix el tope al valor restant).
  *
  * Retorna la quota d'aquest exercici i el nou total acumulat, tots dos com a
  * string "X.XX". Si el bé ja està totalment amortitzat (o el % és 0), la
@@ -53,6 +87,8 @@ export function calcularQuota(
   importAdquisicio: string,
   percentatge: string,
   importAmortitzat: string,
+  exercici: number,
+  dataAdquisicio: Date,
 ): { quota: string; nouAmortitzat: string } {
   const base = toCents(importAdquisicio);
   // El percentatge té 2 decimals (Decimal(5,2)); toCents el converteix a
@@ -65,12 +101,23 @@ export function calcularQuota(
     return { quota: "0.00", nouAmortitzat: fromCents(amortitzat) };
   }
 
+  // Quota anual sencera, arrodonida a la cèntima més propera (half-up).
   const producte = base * pbp;
   let anual = producte / TEN_THOUSAND;
-  // Arrodoniment a la cèntima més propera (half-up), tot amb enters.
   if ((producte % TEN_THOUSAND) * TWO >= TEN_THOUSAND) anual += ONE;
 
-  const quota = anual < restant ? anual : restant; // tope: no passar-se
+  // Prorrateig si l'exercici és el de l'adquisició: anual × dies / diesAny,
+  // tot en cèntims sencers i amb el mateix arrodoniment half-up.
+  let quotaPeriode = anual;
+  if (exercici === dataAdquisicio.getUTCFullYear()) {
+    const dies = BigInt(diesEnUsPrimerAny(dataAdquisicio));
+    const diesAny = BigInt(diesDeLAny(exercici));
+    const num = anual * dies;
+    quotaPeriode = num / diesAny;
+    if ((num % diesAny) * TWO >= diesAny) quotaPeriode += ONE;
+  }
+
+  const quota = quotaPeriode < restant ? quotaPeriode : restant; // tope
   return {
     quota: fromCents(quota),
     nouAmortitzat: fromCents(amortitzat + quota),
