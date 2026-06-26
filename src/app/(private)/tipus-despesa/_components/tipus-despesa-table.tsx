@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { nomGrupPGC } from "@/domain/pgc";
 import type { TipusDespesaWithCount } from "@/domain/tipus-despesa";
 
 function YesNoBadge({ value }: { value: boolean }) {
@@ -79,7 +80,10 @@ export function TipusDespesaTable({
                   {t.descripcio}
                 </Link>
               </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">
+              <TableCell
+                className="font-mono text-xs text-muted-foreground"
+                title={nomGrupPGC(t.grup) ?? undefined}
+              >
                 {t.grup ?? "—"}
               </TableCell>
               <TableCell>

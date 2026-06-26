@@ -4,6 +4,7 @@ import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
 import { NotFoundError } from "@/domain/errors";
+import { nomGrupPGC } from "@/domain/pgc";
 import { potGestionarDomini } from "@/domain/permissions";
 import { currentRole } from "@/services/auth-service";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
@@ -66,6 +67,7 @@ export default async function TipusDespesaDetailPage({
           {tipus.grup != null && (
             <>
               {" · "}Grup PGC {tipus.grup}
+              {nomGrupPGC(tipus.grup) ? ` — ${nomGrupPGC(tipus.grup)}` : ""}
             </>
           )}
         </p>

@@ -16,7 +16,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { GRUPS_PGC } from "@/domain/pgc";
 import { cn } from "@/lib/utils";
+
+// Estil del desplegable, alineat amb l'alçada i l'aspecte dels Inputs del form.
+const SELECT_CLASS =
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50";
 
 export type TipusDespesaFormState = {
   error?: string;
@@ -135,19 +140,21 @@ export function TipusDespesaForm({
         </CardHeader>
         <CardContent className="grid gap-5 md:grid-cols-[1fr_2fr]">
           <div className="space-y-1.5">
-            <Label htmlFor="grup">Grup PGC (1–9)</Label>
-            <Input
+            <Label htmlFor="grup">Grup PGC</Label>
+            <select
               id="grup"
               name="grup"
-              type="number"
-              min={1}
-              max={9}
-              step={1}
               defaultValue={defaults.grup}
-              placeholder="6"
-              className={cn("font-mono", fe.grup && "border-destructive")}
+              className={cn(SELECT_CLASS, fe.grup && "border-destructive")}
               aria-invalid={!!fe.grup}
-            />
+            >
+              <option value="">—</option>
+              {GRUPS_PGC.map((g) => (
+                <option key={g.valor} value={g.valor}>
+                  {g.valor} — {g.nom}
+                </option>
+              ))}
+            </select>
             <FieldError messages={fe.grup} />
           </div>
 
