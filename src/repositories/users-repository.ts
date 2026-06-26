@@ -108,6 +108,14 @@ export const usersRepository = {
     return toDomain(row);
   },
 
+  /** Marca que l'usuari ja no ha de canviar la contrasenya (IA-20). */
+  async clearMustChangePassword(id: string): Promise<void> {
+    await prisma.user.update({
+      where: { id },
+      data: { mustChangePassword: false },
+    });
+  },
+
   /**
    * Wipe every Session row for a given user. Used in two places:
    *  1. After admin-creates-user via signUpEmail, to discard the

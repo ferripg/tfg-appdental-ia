@@ -45,6 +45,10 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: { type: "string", input: false },
+      // Exposat a la sessió perquè el proxy pugui forçar el canvi de
+      // contrasenya al primer accés (IA-20). `input: false`: només la nostra
+      // lògica el canvia, mai el client.
+      mustChangePassword: { type: "boolean", input: false },
     },
   },
   // Seguretat d'accés (UC login hardening). Better Auth no tracta de sèrie

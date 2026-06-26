@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, KeyRound, LogOut } from "lucide-react";
+import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,6 +76,12 @@ export function UserMenu({ user }: { user: SessionUser }) {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/canvi-contrasenya" className="w-full cursor-pointer">
+            <KeyRound className="size-4" />
+            Canviar contrasenya
+          </Link>
+        </DropdownMenuItem>
         <form action={logoutAction}>
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full cursor-pointer">

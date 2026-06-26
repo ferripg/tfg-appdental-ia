@@ -1,10 +1,12 @@
-import { cookies } from "next/headers";
+import { APIError } from "better-auth/api";
+import { cookies, headers } from "next/headers";
 import {
   BusinessError,
   NotFoundError,
   ValidationError,
 } from "@/domain/errors";
 import {
+  changePasswordSchema,
   type UserListFilters,
   userCreateSchema,
   userUpdateSchema,
@@ -12,7 +14,7 @@ import {
 import { auth } from "@/lib/auth";
 import { usersRepository } from "@/repositories/users-repository";
 import { auditService } from "./audit-service";
-import { requireAdmin } from "./auth-service";
+import { requireAdmin, requireSession } from "./auth-service";
 import { flattenZodErrors } from "./zod-helpers";
 
 /**
@@ -218,5 +220,49 @@ export const usersService = {
     }
 
     return updated;
+  },
+
+  /**
+   * Canvi de contrasenya propi (IA-20). Valida la nova (política + confirmació),
+   * delega la verificació de l'ACTUAL a Better Auth (changePassword) i revoca
+   * les altres sessions. En èxit, neteja `mustChangePassword` i ho audita.
+   */
+  async changeOwnPassword(input: unknown) {
+    const session = await requireSession();
+
+    const parsed = changePasswordSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError(
+        "Hi ha errors al formulari",
+        flattenZodErrors(parsed.error),
+      );
+    }
+    const { actual, nova } = parsed.data;
+
+    try {
+      await auth.api.changePassword({
+        body: {
+          currentPassword: actual,
+          newPassword: nova,
+          revokeOtherSessions: true,
+        },
+        headers: await headers(),
+      });
+    } catch (err) {
+      // La nova ja està validada; l'error esperat aquí és que l'actual no
+      // sigui correcta. El traduïm a un error de camp clar.
+      if (err instanceof APIError) {
+        throw new BusinessError("La contrasenya actual no és correcta", {
+          actual: ["La contrasenya actual no és correcta"],
+        });
+      }
+      throw err;
+    }
+
+    await usersRepository.clearMustChangePassword(session.user.id);
+    await auditService.record(session.user.id, "PASSWORD_CHANGE", {
+      entitat: "User",
+      entitatId: session.user.id,
+    });
   },
 };

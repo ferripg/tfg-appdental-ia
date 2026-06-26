@@ -62,6 +62,23 @@ export const userUpdateSchema = z.object({
   actiu: z.boolean().optional(),
 });
 
+/**
+ * Schema del canvi de contrasenya propi (IA-20). `nova` segueix la mateixa
+ * política que en crear un usuari (mín. 8, una majúscula, un dígit) i
+ * `confirmar` ha de coincidir amb `nova`. La contrasenya ACTUAL la verifica
+ * Better Auth (changePassword), no aquest schema.
+ */
+export const changePasswordSchema = z
+  .object({
+    actual: z.string().min(1, { error: "Introdueix la contrasenya actual" }),
+    nova: passwordSchema,
+    confirmar: z.string().min(1, { error: "Confirma la nova contrasenya" }),
+  })
+  .refine((d) => d.nova === d.confirmar, {
+    error: "Les contrasenyes no coincideixen",
+    path: ["confirmar"],
+  });
+
 export type UserCreateInput = z.output<typeof userCreateSchema>;
 export type UserUpdateInput = z.output<typeof userUpdateSchema>;
 
