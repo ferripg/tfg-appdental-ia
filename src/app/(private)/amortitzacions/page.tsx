@@ -116,7 +116,7 @@ export default async function AmortitzacionsPage({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -167,7 +167,7 @@ export default async function AmortitzacionsPage({
       {exSeleccionat !== null && detall.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xl">Detall de l&apos;exercici {exSeleccionat}</h2>
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

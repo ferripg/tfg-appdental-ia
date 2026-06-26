@@ -54,7 +54,7 @@ export function MobileNav({
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           aria-label="Obre el menú de navegació"
         >
           <Menu className="size-5" />

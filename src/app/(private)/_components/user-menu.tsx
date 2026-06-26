@@ -53,7 +53,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
               {initials(user)}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden max-w-[12rem] truncate text-sm md:inline">
+          <span className="hidden max-w-[12rem] truncate text-sm xl:inline">
             {user.email}
           </span>
           <ChevronDown className="size-3.5 text-muted-foreground" />

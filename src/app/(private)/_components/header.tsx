@@ -40,8 +40,10 @@ export function Header({ user }: { user: SessionUser }) {
           <Wordmark size="md" />
         </Link>
 
-        {/* Navegació d'escriptori: enllaços solts + grup Admin */}
-        <nav className="hidden flex-1 items-center gap-1 md:flex">
+        {/* Navegació d'escriptori (≥ lg): enllaços solts + grup Admin. Per sota
+            de lg (mòbil i tauleta tipus iPad) s'amaga i s'usa la hamburguesa,
+            perquè la nav sencera no hi cap i desbordava cap a la dreta. */}
+        <nav className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
           {REGULAR_ITEMS.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
