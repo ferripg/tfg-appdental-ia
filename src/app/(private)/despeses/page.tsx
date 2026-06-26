@@ -15,6 +15,8 @@ type SearchParams = Promise<{
   fins?: string;
   proveidor?: string;
   tipus?: string;
+  min?: string;
+  max?: string;
   msg?: string | string[];
 }>;
 
@@ -22,6 +24,14 @@ function parseDate(v?: string): Date | undefined {
   if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return undefined;
   const d = new Date(`${v}T00:00:00Z`);
   return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+/** Normalitza un import del filtre ("123,4" → "123.4") i el valida ≥ 0. */
+function parseImport(v?: string): string | undefined {
+  if (!v) return undefined;
+  const norm = v.trim().replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(norm)) return undefined;
+  return norm;
 }
 
 export default async function DespesesPage({
@@ -35,6 +45,8 @@ export default async function DespesesPage({
   const fins = parseDate(sp.fins);
   const proveidorId = sp.proveidor?.trim() || undefined;
   const tipusDespesaId = sp.tipus?.trim() || undefined;
+  const importMin = parseImport(sp.min);
+  const importMax = parseImport(sp.max);
 
   const [despeses, tipus, proveidors] = await Promise.all([
     despesesService.list({
@@ -43,6 +55,8 @@ export default async function DespesesPage({
       fins,
       proveidorId,
       tipusDespesaId,
+      importMin,
+      importMax,
     }),
     tipusDespesaService.list({ includeInactius: false }),
     proveidorsService.list({ includeInactius: false }),
@@ -78,6 +92,8 @@ export default async function DespesesPage({
         fins={sp.fins ?? ""}
         proveidorId={proveidorId}
         tipusDespesaId={tipusDespesaId}
+        importMin={sp.min ?? ""}
+        importMax={sp.max ?? ""}
         tipus={tipus}
         proveidors={proveidors}
       />

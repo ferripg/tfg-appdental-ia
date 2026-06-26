@@ -89,7 +89,9 @@ export default function LoginPage() {
             <CardContent>
               <form action={formAction} className="space-y-5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Correu electrònic</Label>
+                  {/* L'usuari final ho viu com un "usuari"; per sota segueix
+                      sent l'email (type=email, validació i autocompletat). */}
+                  <Label htmlFor="email">Usuari</Label>
                   <Input
                     id="email"
                     name="email"

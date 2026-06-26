@@ -134,8 +134,8 @@ export function DespesaForm({
         <CardHeader>
           <CardTitle className="text-xl">Concepte</CardTitle>
           <CardDescription>
-            Tipus de despesa, proveïdor i import. El tipus i l&apos;import són
-            obligatoris.
+            Tipus de despesa, proveïdor, import i descripció. El tipus,
+            l&apos;import i la descripció són obligatoris.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-5 md:grid-cols-2">
@@ -208,11 +208,14 @@ export function DespesaForm({
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
-            <Label htmlFor="descripcio">Descripció</Label>
+            <Label htmlFor="descripcio">
+              Descripció <span className="text-destructive">*</span>
+            </Label>
             <Textarea
               id="descripcio"
               name="descripcio"
               rows={3}
+              required
               defaultValue={defaults.descripcio}
               placeholder="Concepte específic de la despesa (ex. material per a cirurgia oral)"
               className={cn(fe.descripcio && "border-destructive")}

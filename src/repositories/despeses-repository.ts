@@ -42,7 +42,9 @@ function toDomain(d: PrismaDespesaWithJoins): DespesaWithRelations {
     dataPagament: d.dataPagament,
     import: d.import.toString(),
     numFactura: d.numFactura,
-    descripcio: d.descripcio,
+    // El concepte ara és obligatori a l'entrada (IA-17), però la columna és
+    // nullable per a despeses antigues: les normalitzem a "" en llegir-les.
+    descripcio: d.descripcio ?? "",
     tipusDespesaId: d.tipusDespesaId,
     proveidorId: d.proveidorId,
     fitxerKey: d.fitxerKey,
@@ -59,7 +61,8 @@ export const despesesRepository = {
   async findAll(
     filters: DespesaListFilters = {},
   ): Promise<DespesaWithRelations[]> {
-    const { search, des, fins, proveidorId, tipusDespesaId } = filters;
+    const { search, des, fins, proveidorId, tipusDespesaId, importMin, importMax } =
+      filters;
     const where: Prisma.DespesaWhereInput = {
       ...(search
         ? {
@@ -74,6 +77,15 @@ export const despesesRepository = {
             dataFactura: {
               ...(des ? { gte: des } : {}),
               ...(fins ? { lte: fins } : {}),
+            },
+          }
+        : {}),
+      // Rang d'import: Prisma accepta strings decimals per a columnes Decimal.
+      ...(importMin || importMax
+        ? {
+            import: {
+              ...(importMin ? { gte: importMin } : {}),
+              ...(importMax ? { lte: importMax } : {}),
             },
           }
         : {}),

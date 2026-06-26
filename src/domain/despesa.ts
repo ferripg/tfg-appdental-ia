@@ -61,8 +61,15 @@ export const despesaInputSchema = z.object({
   dataFactura: dateRequired,
   dataPagament: dateOptional,
   import: importPositive,
+  // El número de factura segueix OPCIONAL (no totes les despeses en tenen),
+  // però el concepte/descripció és OBLIGATORI: tota despesa s'ha de poder
+  // identificar pel seu concepte (IA-17).
   numFactura: optionalText(50),
-  descripcio: optionalText(500),
+  descripcio: z
+    .string()
+    .trim()
+    .min(1, { error: "El concepte és obligatori" })
+    .max(500, { error: "Màxim 500 caràcters" }),
   tipusDespesaId: z
     .string()
     .min(1, { error: "Selecciona un tipus de despesa" }),
@@ -100,4 +107,7 @@ export type DespesaListFilters = {
   fins?: Date;
   proveidorId?: string;
   tipusDespesaId?: string;
+  /** Rang d'import (strings decimals "X.XX"); combinables amb la resta. */
+  importMin?: string;
+  importMax?: string;
 };

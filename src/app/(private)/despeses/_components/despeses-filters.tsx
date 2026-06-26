@@ -10,6 +10,8 @@ type Props = {
   fins?: string;
   proveidorId?: string;
   tipusDespesaId?: string;
+  importMin?: string;
+  importMax?: string;
   tipus: Array<{ id: string; codi: string; descripcio: string }>;
   proveidors: Array<{ id: string; nif: string; nom: string }>;
 };
@@ -23,6 +25,8 @@ export function DespesesFilters({
   fins,
   proveidorId,
   tipusDespesaId,
+  importMin,
+  importMax,
   tipus,
   proveidors,
 }: Props) {
@@ -30,9 +34,9 @@ export function DespesesFilters({
     <form
       action="/despeses"
       method="get"
-      className="grid gap-3 rounded-lg border border-border bg-card/60 p-3 md:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto]"
+      className="grid gap-3 rounded-lg border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
         <Label htmlFor="q" className="text-xs uppercase tracking-wider">
           Cerca
         </Label>
@@ -59,6 +63,38 @@ export function DespesesFilters({
           Fins
         </Label>
         <Input id="fins" name="fins" type="date" defaultValue={fins ?? ""} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="min" className="text-xs uppercase tracking-wider">
+          Import mín (€)
+        </Label>
+        <Input
+          id="min"
+          name="min"
+          type="number"
+          min={0}
+          step="0.01"
+          inputMode="decimal"
+          defaultValue={importMin ?? ""}
+          placeholder="0,00"
+          className="font-mono tabular-nums"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="max" className="text-xs uppercase tracking-wider">
+          Import màx (€)
+        </Label>
+        <Input
+          id="max"
+          name="max"
+          type="number"
+          min={0}
+          step="0.01"
+          inputMode="decimal"
+          defaultValue={importMax ?? ""}
+          placeholder="0,00"
+          className="font-mono tabular-nums"
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="tipus" className="text-xs uppercase tracking-wider">
