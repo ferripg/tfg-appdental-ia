@@ -21,7 +21,7 @@ const NAV_ITEMS: {
   { label: "Despeses", href: "/despeses" },
   { label: "Inventari", href: "/inventari" },
   { label: "Amortitzacions", href: "/amortitzacions" },
-  { label: "Reports", href: "#", disabled: true },
+  { label: "Informes", href: "/informes" },
   { label: "Usuaris", href: "/usuaris", adminOnly: true },
   { label: "Auditoria", href: "/auditoria", adminOnly: true },
 ];
