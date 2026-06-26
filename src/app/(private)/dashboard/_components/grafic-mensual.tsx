@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -46,14 +46,17 @@ function tickEuros(v: number): string {
  * resol; per això llegim el valor calculat de :root (s'adapta a clar/fosc).
  */
 function useColorTema(nom: string, fallback: string): string {
-  const [color, setColor] = useState(fallback);
-  useEffect(() => {
+  // Inicialització lazy (sense effect → sense setState dins d'effect): a SSR
+  // retorna el fallback; al client llegeix el valor real del tema. El gràfic
+  // només es dibuixa al client (ResponsiveContainer mesura el DOM), així que
+  // no hi ha mismatch d'hidratació visible.
+  return useState(() => {
+    if (typeof document === "undefined") return fallback;
     const v = getComputedStyle(document.documentElement)
       .getPropertyValue(nom)
       .trim();
-    if (v) setColor(v);
-  }, [nom]);
-  return color;
+    return v || fallback;
+  })[0];
 }
 
 /**

@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { dashboardService } from "@/services/dashboard-service";
 import { formatCurrency } from "@/lib/format";
 import { GraficMensual } from "./_components/grafic-mensual";
+import { GraficTipus } from "./_components/grafic-tipus";
 
 /** Amplada relativa (%) d'una barra respecte del valor més gran del grup. */
 function ampladaBarra(total: string, maxim: number): number {
@@ -29,7 +30,6 @@ export default async function DashboardPage() {
   const topProveidor = resum.topProveidors[0];
   const topTipus = resum.perTipus[0];
   const maxProveidor = topProveidor ? Number(topProveidor.total) : 0;
-  const maxTipus = topTipus ? Number(topTipus.total) : 0;
 
   return (
     <div className="space-y-10">
@@ -150,27 +150,7 @@ export default async function DashboardPage() {
                 Cap despesa registrada aquest any.
               </p>
             ) : (
-              <ul className="space-y-3">
-                {resum.perTipus.map((t) => (
-                  <li key={t.codi} className="space-y-1">
-                    <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="truncate">
-                        <span className="font-mono">{t.codi}</span>
-                        <span className="text-muted-foreground"> · {t.descripcio}</span>
-                      </span>
-                      <span className="font-mono tabular-nums">
-                        {formatCurrency(t.total)}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary/70"
-                        style={{ width: `${ampladaBarra(t.total, maxTipus)}%` }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <GraficTipus dades={resum.perTipus} />
             )}
           </CardContent>
         </Card>
