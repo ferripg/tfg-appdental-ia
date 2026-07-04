@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ca">
+<!-- Font de la factura "escanejada" de Quirumed (proveïdor NOU + tipus amortitzable).
+     Es captura amb Playwright a 1200x1697 i s'incrusta com a imatge al PDF. -->
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 1697px; overflow: hidden; }
+  body {
+    background: #b9b4a8;
+    font-family: Verdana, Geneva, sans-serif;
+    position: relative;
+  }
+  /* full de paper lleugerament girat, com un escaneig fet de pressa */
+  .paper {
+    position: absolute;
+    top: 22px; left: 26px;
+    width: 1146px; height: 1650px;
+    background: linear-gradient(115deg, #f5f0e4 0%, #efe9da 45%, #e7e0cd 100%);
+    transform: rotate(-0.9deg);
+    box-shadow: 0 0 26px rgba(0,0,0,.55), inset 0 0 120px rgba(92,80,50,.28);
+    padding: 78px 90px;
+    color: #2e2a22;
+  }
+  /* soroll granulat de l'escàner */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .14;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* banda fosca vertical típica del capçal de l'escàner */
+  body::before {
+    content: ""; position: fixed; top: 0; bottom: 0; left: 46%; width: 90px;
+    background: linear-gradient(90deg, transparent, rgba(60,50,30,.10), transparent);
+    pointer-events: none;
+  }
+  .paper > * { filter: blur(.35px); }
+  .header { display: flex; justify-content: space-between; border-bottom: 4px solid #1e3a5f; padding-bottom: 26px; }
+  .logo { font-size: 52px; font-weight: 900; color: #1e3a5f; letter-spacing: -2px; }
+  .logo small { display: block; font-size: 15px; font-weight: 400; letter-spacing: 4px; color: #4a4436; }
+  .provdata { text-align: right; font-size: 17px; line-height: 1.6; color: #3a3529; }
+  .titolbox { margin-top: 44px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .titol { font-size: 40px; font-weight: 700; color: #1e3a5f; letter-spacing: 6px; }
+  .metabox { border: 3px double #55503f; padding: 14px 26px; font-size: 19px; line-height: 1.7; }
+  .client { margin-top: 46px; font-size: 19px; line-height: 1.65; }
+  .client .lbl { font-size: 14px; letter-spacing: 3px; color: #6b6350; }
+  table { width: 100%; margin-top: 48px; border-collapse: collapse; font-size: 19px; }
+  th { background: #d7d0bd; text-align: left; padding: 14px 16px; border: 2px solid #55503f; font-size: 16px; letter-spacing: 1px; }
+  td { padding: 16px; border: 2px solid #7a7460; }
+  .num { text-align: right; }
+  .resum { margin-top: 40px; margin-left: auto; width: 420px; font-size: 21px; }
+  .resum div { display: flex; justify-content: space-between; padding: 8px 4px; }
+  .resum .total { border-top: 4px solid #1e3a5f; font-weight: 900; font-size: 27px; margin-top: 8px; padding-top: 14px; }
+  .peu { position: absolute; bottom: 66px; left: 90px; right: 90px; font-size: 14px; color: #6b6350; border-top: 1px solid #a29a83; padding-top: 14px; line-height: 1.6; }
+  .segell {
+    position: absolute; bottom: 200px; left: 120px;
+    border: 4px solid rgba(30,80,140,.55); color: rgba(30,80,140,.6);
+    border-radius: 10px; padding: 12px 24px; font-size: 20px; font-weight: 700;
+    transform: rotate(-8deg); letter-spacing: 2px;
+  }
+  .taca {
+    position: absolute; top: 300px; right: 130px; width: 130px; height: 120px;
+    border-radius: 50%; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(120,90,40,.16) 0%, rgba(120,90,40,.05) 55%, transparent 70%);
+    box-shadow: 0 0 0 6px rgba(120,90,40,.05);
+  }
+</style>
+</head>
+<body>
+  <div class="paper">
+    <div class="header">
+      <div class="logo">QUIRUMED<small>EQUIPAMENT CLÍNIC</small></div>
+      <div class="provdata">
+        <strong>Quirumed S.L.U.</strong><br>
+        CIF: B-97045470<br>
+        Av. de la Plata 34, 46013 València<br>
+        Tel. 963 528 803 · vendes@quirumed.com
+      </div>
+    </div>
+    <div class="titolbox">
+      <div class="titol">FACTURA</div>
+      <div class="metabox">
+        <strong>Núm.:</strong> QM-26/1180<br>
+        <strong>Data:</strong> 05/06/2026
+      </div>
+    </div>
+    <div class="client">
+      <span class="lbl">CLIENT</span><br>
+      <strong>Clínica Dental Somriure SLP</strong><br>
+      NIF: B12345674<br>
+      C/ Migdia 18, 17002 Girona
+    </div>
+    <table>
+      <tr><th>REF.</th><th>DESCRIPCIÓ</th><th class="num">QUANT.</th><th class="num">PREU</th><th class="num">IMPORT</th></tr>
+      <tr>
+        <td>AUT-23B</td>
+        <td>Autoclau de vapor classe B 23 L — model STERIL-PRO<br>
+            <span style="font-size:15px;color:#6b6350">Inclou instal·lació, validació i qualificació tèrmica</span></td>
+        <td class="num">1</td>
+        <td class="num">2.884,30 €</td>
+        <td class="num">2.884,30 €</td>
+      </tr>
+    </table>
+    <div class="resum">
+      <div><span>Base imposable</span><span>2.884,30 €</span></div>
+      <div><span>IVA (21%)</span><span>605,70 €</span></div>
+      <div class="total"><span>TOTAL</span><span>3.490,00 €</span></div>
+    </div>
+    <div class="segell">PAGAT · 05/06/2026</div>
+    <div class="taca"></div>
+    <div class="peu">
+      Garantia de 24 mesos. Servei tècnic oficial. Pagament al comptat per transferència.<br>
+      Quirumed S.L.U. — Inscrita al R.M. de València, Tom 8231, Foli 112, Full V-108734.
+    </div>
+  </div>
+</body>
+</html>

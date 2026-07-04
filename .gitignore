@@ -48,3 +48,7 @@ next-env.d.ts
 
 # Playwright MCP test artifacts (snapshots, console logs)
 .playwright-mcp/
+
+# Captures intermèdies dels PDFs "escanejats" (regenerables des dels .html
+# de test-fixtures/scans-src amb un navegador; els PDFs sí que es versionen)
+test-fixtures/scans-src/*.png

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ca">
+<!-- Font de la factura "escanejada" del laboratori protèsic (proveïdor NOU + tipus NOU).
+     Aspecte de factura antiga feta amb màquina d'escriure, escanejada amb poc contrast. -->
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 1697px; overflow: hidden; }
+  body { background: #a8a49c; font-family: "Courier New", Courier, monospace; position: relative; }
+  .paper {
+    position: absolute;
+    top: 30px; left: 20px;
+    width: 1152px; height: 1640px;
+    background: linear-gradient(160deg, #ece4d0 0%, #e4dcc6 50%, #d9d0b6 100%);
+    transform: rotate(1.1deg);
+    box-shadow: 0 0 30px rgba(0,0,0,.6), inset 0 0 160px rgba(80,68,40,.30);
+    padding: 90px 96px;
+    color: #33302a;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .18;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* línia de plec horitzontal, com si la factura hagués anat doblegada dins un sobre */
+  .plec {
+    position: absolute; left: 0; right: 0; top: 46%; height: 4px;
+    background: linear-gradient(180deg, rgba(90,75,45,.18), rgba(255,255,255,.35), rgba(90,75,45,.14));
+    transform: rotate(.4deg);
+  }
+  .paper > *:not(.plec) { filter: blur(.45px); }
+  .capcalera { text-align: center; border-bottom: 3px double #55503f; padding-bottom: 30px; }
+  .capcalera h1 { font-size: 34px; letter-spacing: 3px; }
+  .capcalera p { font-size: 18px; margin-top: 10px; line-height: 1.6; }
+  .fila-meta { display: flex; justify-content: space-between; margin-top: 44px; font-size: 20px; }
+  .fila-meta .caixa { border: 2px solid #55503f; padding: 16px 22px; line-height: 1.8; }
+  table { width: 100%; margin-top: 50px; border-collapse: collapse; font-size: 20px; }
+  th, td { border: 2px solid #6d6753; padding: 16px 14px; text-align: left; }
+  th { font-size: 16px; letter-spacing: 2px; background: rgba(109,103,83,.14); }
+  .num { text-align: right; white-space: nowrap; }
+  .resum { margin-top: 44px; margin-left: auto; width: 430px; font-size: 21px; line-height: 2.1; }
+  .resum .linia { display: flex; justify-content: space-between; }
+  .resum .total { border-top: 3px double #33302a; font-weight: 700; font-size: 26px; padding-top: 10px; }
+  .nota { margin-top: 70px; font-size: 17px; line-height: 1.8; }
+  .signatura {
+    position: absolute; bottom: 150px; right: 140px; text-align: center;
+    font-family: "Segoe Script", "Comic Sans MS", cursive;
+    color: rgba(40,50,110,.65); font-size: 30px; transform: rotate(-4deg);
+  }
+  .signatura small { display: block; font-family: "Courier New", monospace; font-size: 14px; color: #55503f; transform: none; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="paper">
+    <div class="capcalera">
+      <h1>LABORATORI PROTÈSIC GARRAF SL</h1>
+      <p>C/ dels Boters 7, 08800 Vilanova i la Geltrú (Barcelona)<br>
+         CIF B-67425181 &nbsp;·&nbsp; Tel. 938 933 412 &nbsp;·&nbsp; lab@protesicgarraf.cat</p>
+    </div>
+    <div class="fila-meta">
+      <div class="caixa">
+        CLIENT:<br>
+        <strong>Clínica Dental Somriure SLP</strong><br>
+        NIF B12345674<br>
+        C/ Migdia 18, 17002 Girona
+      </div>
+      <div class="caixa">
+        FACTURA NÚM.: <strong>LPG-2026-231</strong><br>
+        DATA: <strong>12/06/2026</strong><br>
+        Doctor: Dra. Vidal
+      </div>
+    </div>
+    <table>
+      <tr><th>TREBALL</th><th class="num">PECES</th><th class="num">PREU</th><th class="num">IMPORT</th></tr>
+      <tr><td>Corona de zirconi monolítica (peça 16)</td><td class="num">2</td><td class="num">210,00</td><td class="num">420,00</td></tr>
+      <tr><td>Corona de zirconi estratificada (peça 21)</td><td class="num">1</td><td class="num">265,00</td><td class="num">265,00</td></tr>
+      <tr><td>Estructura provisional PMMA fresada</td><td class="num">1</td><td class="num">205,00</td><td class="num">205,00</td></tr>
+    </table>
+    <div class="resum">
+      <div class="linia"><span>BASE IMPOSABLE</span><span>890,00 EUR</span></div>
+      <div class="linia"><span>IVA 10%</span><span>89,00 EUR</span></div>
+      <div class="linia total"><span>TOTAL FACTURA</span><span>979,00 EUR</span></div>
+    </div>
+    <div class="plec"></div>
+    <div class="nota">
+      Treballs realitzats amb zirconi certificat CE classe IIa.<br>
+      Venciment: 30 dies data factura. Transferència a ES76 0081 0057 3100 0123 4567.
+    </div>
+    <div class="signatura">
+      J. Ferrer
+      <small>Dpt. Administració</small>
+    </div>
+  </div>
+</body>
+</html>
