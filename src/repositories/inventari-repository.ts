@@ -54,8 +54,13 @@ function formatNum(n: number): string {
  * números (taula petita d'una clínica) i en traiem el màxim, robust a forats
  * i a passar de 9999. Es passa un client (tx o prisma) per fer-ho dins la
  * mateixa transacció que la inserció.
+ *
+ * EXPORTAT (IA-23): la importació de factures reutilitza la generació del bé
+ * dins la SEVA transacció per fila (proveïdor→tipus→despesa→bé atòmics).
  */
-async function maxNum(client: Prisma.TransactionClient): Promise<number> {
+export async function maxNumInventari(
+  client: Prisma.TransactionClient,
+): Promise<number> {
   const rows = await client.inventari.findMany({
     select: { numInventari: true },
   });
@@ -67,7 +72,7 @@ async function maxNum(client: Prisma.TransactionClient): Promise<number> {
   return max;
 }
 
-type DespesaParaInventari = {
+export type DespesaParaInventari = {
   id: string;
   dataFactura: Date;
   import: Prisma.Decimal;
@@ -82,8 +87,9 @@ type DespesaParaInventari = {
  * Hereta data, import, factura i proveïdor de la despesa; descripció = la de
  * la despesa o, si és buida, la del tipus; percentatge a 0 (s'omple després).
  * Retorna null si la despesa no té proveïdor o ja té un bé associat.
+ * EXPORTAT (IA-23): vegeu la nota de `maxNumInventari`.
  */
-async function createFromDespesaTx(
+export async function createFromDespesaTx(
   tx: Prisma.TransactionClient,
   despesa: DespesaParaInventari,
   nextNumber: number,
@@ -214,7 +220,7 @@ export const inventariRepository = {
       });
       if (!despesa || !despesa.proveidorId || despesa.inventari) return;
 
-      const next = (await maxNum(tx)) + 1;
+      const next = (await maxNumInventari(tx)) + 1;
       await createFromDespesaTx(tx, despesa, next);
     });
   },
@@ -255,7 +261,7 @@ export const inventariRepository = {
         },
       });
 
-      let next = await maxNum(tx);
+      let next = await maxNumInventari(tx);
       for (const despesa of ambProveidor) {
         next += 1;
         await createFromDespesaTx(tx, despesa, next);
