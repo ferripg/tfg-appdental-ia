@@ -1,7 +1,9 @@
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ResultToast } from "@/components/app/result-toast";
 import { Button } from "@/components/ui/button";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { despesesService } from "@/services/despeses-service";
 import { proveidorsService } from "@/services/proveidors-service";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
@@ -48,7 +50,7 @@ export default async function DespesesPage({
   const importMin = parseImport(sp.min);
   const importMax = parseImport(sp.max);
 
-  const [despeses, tipus, proveidors] = await Promise.all([
+  const [despeses, tipus, proveidors, role] = await Promise.all([
     despesesService.list({
       search,
       des,
@@ -60,6 +62,7 @@ export default async function DespesesPage({
     }),
     tipusDespesaService.list({ includeInactius: false }),
     proveidorsService.list({ includeInactius: false }),
+    currentRole(),
   ]);
 
   return (
@@ -78,12 +81,23 @@ export default async function DespesesPage({
             pagament permeten distingir-ne l&apos;estat fiscal.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/despeses/nou">
-            <Plus className="size-4" />
-            Nova despesa
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* La importació IA crea proveïdors/tipus: reservada a MANAGER+. */}
+          {potGestionarDomini(role) && (
+            <Button asChild variant="outline">
+              <Link href="/despeses/importa">
+                <Sparkles className="size-4" />
+                Importa amb IA
+              </Link>
+            </Button>
+          )}
+          <Button asChild>
+            <Link href="/despeses/nou">
+              <Plus className="size-4" />
+              Nova despesa
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <DespesesFilters
