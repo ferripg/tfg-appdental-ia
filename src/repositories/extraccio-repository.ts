@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { BusinessError } from "@/domain/errors";
 import {
@@ -23,6 +22,15 @@ import { anthropicClient } from "./anthropic-client";
  */
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 16000;
+
+/** Status HTTP d'un error de l'SDK (per propietat, robust al dual-package). */
+function statusDeLError(err: unknown): number | null {
+  if (typeof err === "object" && err !== null && "status" in err) {
+    const s = (err as { status: unknown }).status;
+    if (typeof s === "number") return s;
+  }
+  return null;
+}
 
 function buildPrompt(cataleg: CatalegTipusEntry[]): string {
   const linies = cataleg
@@ -84,10 +92,16 @@ export const extraccioRepository = {
         output_config: { format: zodOutputFormat(facturaExtretaSchema) },
       });
     } catch (err) {
-      if (err instanceof Anthropic.BadRequestError) {
+      // NOTA: no usem `instanceof Anthropic.BadRequestError` perquè amb el
+      // bundling dual CJS/ESM del SDK la classe pot no ser la mateixa
+      // instància (verificat: el 400 del PDF corrupte no hi encaixava).
+      // L'status numèric de l'error de l'API és estable.
+      const status = statusDeLError(err);
+      const missatge = err instanceof Error ? err.message : String(err);
+      if (status === 400) {
         // La manca de crèdit també arriba com a 400 invalid_request_error:
         // no la disfressem de "PDF il·legible".
-        if (err.message.includes("credit balance")) {
+        if (missatge.includes("credit balance")) {
           throw new BusinessError(
             "El compte de l'API d'Anthropic no té crèdit disponible",
           );
@@ -97,7 +111,7 @@ export const extraccioRepository = {
           "El fitxer no és un PDF llegible (corrupte o amb format invàlid)",
         );
       }
-      if (err instanceof Anthropic.RateLimitError) {
+      if (status === 429) {
         throw new BusinessError(
           "S'ha superat el límit de peticions; torna-ho a provar en uns segons",
         );

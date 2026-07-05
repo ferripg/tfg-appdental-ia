@@ -38,6 +38,7 @@ export type TipusOption = {
 export type ProveidorOption = { id: string; nom: string; nif: string };
 
 export type FilaEstat =
+  | "pendent" // triat però encara no enviat a escanejar (fase de selecció)
   | "cua"
   | "analitzant"
   | "revisio"
@@ -189,6 +190,11 @@ export function ImportRow({
             <span className="max-w-56 truncate text-sm font-medium">
               {fila.nomFitxer}
             </span>
+            {fila.estat === "pendent" && (
+              <Badge variant="outline" className="text-muted-foreground">
+                Pendent d&apos;escanejar
+              </Badge>
+            )}
             {fila.estat === "cua" && (
               <Badge variant="secondary" className="text-muted-foreground">
                 En cua
@@ -212,7 +218,9 @@ export function ImportRow({
           </div>
         </TableCell>
         <TableCell className="text-right">
-          {(fila.estat === "errada" || fila.estat === "cua") && (
+          {(fila.estat === "pendent" ||
+            fila.estat === "errada" ||
+            fila.estat === "cua") && (
             <BotoTreu onClick={() => onRemove(fila.clientId)} />
           )}
         </TableCell>

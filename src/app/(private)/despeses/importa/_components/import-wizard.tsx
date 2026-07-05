@@ -69,7 +69,9 @@ function construeixEdit(
   extraccio: FacturaExtreta,
   matching: ImportacioMatching,
 ): EditRow {
-  const n = (v: number | null) => (v === null ? "" : String(v));
+  // Imports monetaris sempre amb 2 decimals ("3490" → "3490.00").
+  const n = (v: number | null) => (v === null ? "" : v.toFixed(2));
+  const pct = (v: number | null) => (v === null ? "" : String(v));
   const teDadesProveidor = Boolean(
     extraccio.proveidor.nif || extraccio.proveidor.nom,
   );
@@ -79,7 +81,7 @@ function construeixEdit(
     descripcio: extraccio.concepte ?? "",
     importTotal: n(extraccio.total),
     baseImposable: n(extraccio.baseImposable),
-    ivaPercentatge: n(extraccio.ivaPercentatge),
+    ivaPercentatge: pct(extraccio.ivaPercentatge),
     ivaImport: n(extraccio.ivaImport),
     proveidorSel:
       matching.proveidorId ?? (teDadesProveidor ? "nou" : "cap"),
@@ -112,7 +114,11 @@ export function ImportWizard({ tipus, proveidors }: Props) {
 
   // Evita perdre una revisió a mig fer en tancar la pestanya per accident.
   const hiHaFeinaViva = files.some(
-    (f) => f.estat === "revisio" || f.estat === "analitzant" || f.estat === "cua",
+    (f) =>
+      f.estat === "pendent" ||
+      f.estat === "revisio" ||
+      f.estat === "analitzant" ||
+      f.estat === "cua",
   );
   useEffect(() => {
     if (!hiHaFeinaViva) return;
@@ -202,36 +208,23 @@ export function ImportWizard({ tipus, proveidors }: Props) {
       const acceptats = nous.slice(0, Math.max(0, forats));
       if (acceptats.length === 0) return;
 
+      // Fase de SELECCIÓ: les files queden "pendent" i res no s'envia a
+      // escanejar fins que l'usuari prem el botó (pot treure el que no toqui).
       const novesFiles: FilaImport[] = acceptats.map((file) => {
         const clientId = crypto.randomUUID();
         fitxersRef.current.set(clientId, file);
-        cuaRef.current.push(clientId);
         const esPdf = file.type === "application/pdf";
         const massaGran = file.size > IMPORTACIO_MAX_BYTES;
-        if (!esPdf || massaGran) {
-          // Ni encuem el fitxer: l'error és local i immediat.
-          cuaRef.current.pop();
-          return {
-            clientId,
-            nomFitxer: file.name,
-            estat: "errada",
-            fitxerKey: null,
-            error: !esPdf ? "Només s'admeten fitxers PDF" : "Supera el màxim de 5 MB",
-            extraccio: null,
-            matching: null,
-            edit: null,
-            seleccionada: false,
-            expandida: false,
-            despesaId: null,
-            resultatFlags: null,
-          };
-        }
         return {
           clientId,
           nomFitxer: file.name,
-          estat: "cua",
+          estat: !esPdf || massaGran ? "errada" : "pendent",
           fitxerKey: null,
-          error: null,
+          error: !esPdf
+            ? "Només s'admeten fitxers PDF"
+            : massaGran
+              ? "Supera el màxim de 5 MB"
+              : null,
           extraccio: null,
           matching: null,
           edit: null,
@@ -243,10 +236,24 @@ export function ImportWizard({ tipus, proveidors }: Props) {
       });
 
       setFiles((prev) => [...prev, ...novesFiles]);
-      bomba();
     },
-    [files.length, bomba],
+    [files.length],
   );
+
+  /** Fase d'ESCANEIG: encua totes les pendents i engega la bomba. */
+  const escaneja = useCallback(() => {
+    const pendents = files
+      .filter((f) => f.estat === "pendent")
+      .map((f) => f.clientId);
+    if (pendents.length === 0) return;
+    for (const id of pendents) {
+      if (!cuaRef.current.includes(id)) cuaRef.current.push(id);
+    }
+    setFiles((prev) =>
+      prev.map((f) => (f.estat === "pendent" ? { ...f, estat: "cua" } : f)),
+    );
+    bomba();
+  }, [files, bomba]);
 
   const editaFila = useCallback(
     (clientId: string, patch: Partial<EditRow>) => {
@@ -308,6 +315,13 @@ export function ImportWizard({ tipus, proveidors }: Props) {
   ).length;
   const enProces = files.some(
     (f) => f.estat === "cua" || f.estat === "analitzant",
+  );
+  const nPendents = files.filter((f) => f.estat === "pendent").length;
+  const hiHaRevisables = files.some(
+    (f) =>
+      f.estat === "revisio" ||
+      f.estat === "rebutjada" ||
+      f.estat === "confirmant",
   );
   const confirmades = files.filter((f) => f.estat === "confirmada");
   const totLlest =
@@ -439,11 +453,19 @@ export function ImportWizard({ tipus, proveidors }: Props) {
               Llegint {files.filter((f) => f.estat === "analitzant").length} de{" "}
               {files.filter((f) => f.estat !== "confirmada").length} fitxers…
             </span>
+          ) : nPendents > 0 ? (
+            `${nPendents} fitxer(s) a punt d'escanejar — repassa la llista i treu el que no toqui`
           ) : (
             `${files.length} fitxer(s) al lot · ${confirmades.length} confirmat(s)`
           )}
         </p>
         <div className="flex items-center gap-2">
+          {nPendents > 0 && (
+            <Button size="sm" onClick={escaneja}>
+              <Sparkles className="size-4" />
+              Escaneja amb IA ({nPendents})
+            </Button>
+          )}
           <input
             ref={inputRef}
             type="file"
@@ -598,8 +620,8 @@ export function ImportWizard({ tipus, proveidors }: Props) {
         </div>
       )}
 
-      {/* Barra de confirmació flotant */}
-      {!totLlest && (
+      {/* Barra de confirmació flotant: només quan ja hi ha files escanejades */}
+      {!totLlest && hiHaRevisables && (
         <div className="sticky bottom-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/90 px-5 py-3.5 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
           <div className="text-sm">
             <p className="font-medium">
@@ -609,12 +631,8 @@ export function ImportWizard({ tipus, proveidors }: Props) {
                 : "factures seleccionades"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {seleccionades.length > 0 && (
-                <>
-                  Es crearan {nProveidorsNous} proveïdor(s) i {nTipusNous} tipus
-                  nou(s); {nBens} bé(ns) d&apos;inventari.
-                </>
-              )}
+              {seleccionades.length > 0 &&
+                `Es crearan ${nProveidorsNous} proveïdor(s) i ${nTipusNous} tipus nou(s); ${nBens} bé(ns) d'inventari.`}
               {incompletes.length > 0 && (
                 <span className="text-amber-600 dark:text-amber-400">
                   {" "}
@@ -678,6 +696,45 @@ export function ImportWizard({ tipus, proveidors }: Props) {
 // Dropzone inicial
 // ---------------------------------------------------------------------------
 
+/**
+ * Recorre recursivament les entrades d'un drop (fitxers I carpetes) i en
+ * retorna els Files. Les entrades s'han de capturar SÍNCRONAMENT dins del
+ * handler del drop (el DataTransfer caduca); per això rebem els entries ja
+ * extrets. Fallback: si el navegador no exposa webkitGetAsEntry, es fan
+ * servir els fitxers plans del drop.
+ */
+async function recorreEntrades(
+  entrades: FileSystemEntry[],
+): Promise<{ files: File[]; deCarpeta: boolean }> {
+  const files: File[] = [];
+  let deCarpeta = false;
+
+  async function camina(entry: FileSystemEntry): Promise<void> {
+    if (entry.isFile) {
+      const file = await new Promise<File>((resolve, reject) =>
+        (entry as FileSystemFileEntry).file(resolve, reject),
+      );
+      files.push(file);
+      return;
+    }
+    if (entry.isDirectory) {
+      deCarpeta = true;
+      const reader = (entry as FileSystemDirectoryEntry).createReader();
+      // readEntries retorna per lots: cal repetir fins que vingui buit.
+      let lot: FileSystemEntry[];
+      do {
+        lot = await new Promise<FileSystemEntry[]>((resolve, reject) =>
+          reader.readEntries(resolve, reject),
+        );
+        for (const e of lot) await camina(e);
+      } while (lot.length > 0);
+    }
+  }
+
+  for (const e of entrades) await camina(e);
+  return { files, deCarpeta };
+}
+
 function Dropzone({
   arrossegant,
   setArrossegant,
@@ -706,7 +763,41 @@ function Dropzone({
       onDrop={(e) => {
         e.preventDefault();
         setArrossegant(false);
-        onFiles(e.dataTransfer.files);
+        // Captura els entries ara mateix (el DataTransfer caduca en sortir
+        // del handler) i després recorre carpetes de manera asíncrona.
+        const entrades = Array.from(e.dataTransfer.items ?? [])
+          .map((item) => item.webkitGetAsEntry?.())
+          .filter((entry): entry is FileSystemEntry => entry != null);
+        const fitxersPlans = Array.from(e.dataTransfer.files);
+
+        if (entrades.length === 0) {
+          onFiles(fitxersPlans);
+          return;
+        }
+        void recorreEntrades(entrades).then(({ files, deCarpeta }) => {
+          if (!deCarpeta) {
+            onFiles(files);
+            return;
+          }
+          // D'una carpeta només interessen els PDF; la resta s'ignora
+          // silenciosament (avisant del recompte) en lloc d'omplir la
+          // taula d'errors amb fitxers que l'usuari no ha triat un a un.
+          const pdfs = files.filter(
+            (f) =>
+              f.type === "application/pdf" ||
+              f.name.toLowerCase().endsWith(".pdf"),
+          );
+          if (pdfs.length === 0) {
+            toast.warning("La carpeta no conté cap PDF.");
+            return;
+          }
+          if (pdfs.length < files.length) {
+            toast.info(
+              `S'han agafat ${pdfs.length} PDF de la carpeta (${files.length - pdfs.length} fitxers d'altres tipus ignorats).`,
+            );
+          }
+          onFiles(pdfs);
+        });
       }}
       className={cn(
         "group relative flex min-h-72 cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border-2 border-dashed border-border bg-card/40 px-6 py-14 text-center transition-all",
@@ -743,14 +834,15 @@ function Dropzone({
             : "Arrossega aquí els PDF de factures"}
         </p>
         <p className="text-sm text-muted-foreground">
-          o fes clic per triar-los · fins a {IMPORTACIO_MAX_FITXERS} fitxers ·
-          màx. 5 MB cadascun
+          o fes clic per triar-los — també hi pots deixar anar una carpeta
+          sencera · fins a {IMPORTACIO_MAX_FITXERS} fitxers · màx. 5 MB
+          cadascun
         </p>
       </div>
 
       <p className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
         <Sparkles className="size-3.5 text-primary" />
-        Lectura automàtica amb IA · revisió sempre manual
+        Res no s&apos;escaneja fins que tu ho engeguis · revisió sempre manual
       </p>
     </div>
   );
