@@ -90,9 +90,13 @@ export type FilaImport = {
   } | null;
 };
 
-/** Mateix idioma visual que els selects natius dels filtres del repo. */
+/**
+ * Mateix idioma visual que els selects natius dels filtres del repo, amb
+ * `truncate` + padding dret extra perquè els noms llargs no quedin mai sota
+ * la fletxa del desplegable.
+ */
 const SELECT_CLASS =
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-8 w-full min-w-0 truncate rounded-lg border border-input bg-transparent py-1 pl-2.5 pr-7 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const DUBTOS_CLASS =
   "border-amber-500/70 ring-1 ring-amber-500/50 focus-visible:ring-amber-500/50";
@@ -221,8 +225,16 @@ export function ImportRow({
     <>
       <TableRow
         data-estat={fila.estat}
+        onClick={(e) => {
+          // Clic a qualsevol punt "buit" de la fila = desplegar/replegar.
+          // Els clics sobre camps, botons i enllaços no hi interfereixen.
+          const target = e.target as HTMLElement;
+          if (target.closest("input,select,button,a,label,[role='checkbox']"))
+            return;
+          onToggleExpand(fila.clientId);
+        }}
         className={cn(
-          "animate-in fade-in slide-in-from-bottom-1 align-top duration-300",
+          "animate-in fade-in slide-in-from-bottom-1 cursor-pointer align-top duration-300",
           fila.estat === "confirmant" && "opacity-60",
           fila.estat === "confirmada" && "bg-primary/[0.03]",
         )}
@@ -264,7 +276,7 @@ export function ImportRow({
         </TableCell>
 
         {/* Data factura */}
-        <TableCell className="w-36">
+        <TableCell className="min-w-36">
           <Input
             type="date"
             value={edit.dataFactura}
@@ -276,7 +288,7 @@ export function ImportRow({
         </TableCell>
 
         {/* Núm. factura */}
-        <TableCell className="w-32">
+        <TableCell className="min-w-32">
           <Input
             value={edit.numFactura}
             onChange={(e) => onEdit(fila.clientId, { numFactura: e.target.value })}
@@ -299,8 +311,8 @@ export function ImportRow({
           />
         </TableCell>
 
-        {/* Import total */}
-        <TableCell className="w-28">
+        {/* Import total: min-w garanteix que "3.490,00 €" es vegi sencer */}
+        <TableCell className="min-w-32">
           <div className="relative">
             <Input
               value={edit.importTotal}
@@ -327,6 +339,10 @@ export function ImportRow({
             onChange={(e) => onEdit(fila.clientId, { proveidorSel: e.target.value })}
             disabled={!potEditar(fila)}
             aria-label="Proveïdor"
+            title={
+              proveidors.find((p) => p.id === edit.proveidorSel)?.nom ??
+              (edit.proveidorSel === "nou" ? edit.provNom : undefined)
+            }
             className={cn(SELECT_CLASS, dubtosClass("nif"))}
           >
             <option value="cap">— Sense proveïdor —</option>
@@ -348,6 +364,10 @@ export function ImportRow({
             onChange={(e) => onEdit(fila.clientId, { tipusSel: e.target.value })}
             disabled={!potEditar(fila)}
             aria-label="Tipus de despesa"
+            title={
+              tipus.find((t) => t.id === edit.tipusSel)?.descripcio ??
+              (edit.tipusSel === "nou" ? edit.tipusDescripcio : undefined)
+            }
             className={SELECT_CLASS}
           >
             <option value="">— Tria un tipus —</option>
