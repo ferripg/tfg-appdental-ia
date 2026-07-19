@@ -205,7 +205,7 @@ export function UsuariForm({
                 defaultChecked={defaults.actiu}
                 disabled={!actiuEditable}
               />
-              Usuari actiu (pot iniciar sessió)
+              Usuari actiu
             </label>
             <FieldError messages={fe.actiu} />
           </div>
