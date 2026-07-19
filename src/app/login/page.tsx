@@ -57,14 +57,13 @@ export default function LoginPage() {
             Gestió interna per a clíniques dentals.
           </p>
           <p className="text-sm text-muted-foreground">
-            Despeses, proveïdors, inventari i tancament fiscal — en un sol
-            lloc, sense fulls de càlcul ni paperassa.
+            Despeses, proveïdors i inventari, tot en un sol lloc.
           </p>
         </div>
 
         <div className="relative flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono uppercase tracking-widest">
-            Sprint 2 · IA
+            IA
           </span>
           <span className="h-px flex-1 bg-border" />
           <span className="font-mono">v0.1</span>
