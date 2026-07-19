@@ -62,9 +62,6 @@ export default function LoginPage() {
         </div>
 
         <div className="relative flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="font-mono uppercase tracking-widest">
-            IA
-          </span>
           <span className="h-px flex-1 bg-border" />
           <span className="font-mono">v0.1</span>
         </div>
