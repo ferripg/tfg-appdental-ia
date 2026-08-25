@@ -44,7 +44,7 @@ export function TipusDespesaTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card">
+    <div className="overflow-x-auto border-t border-foreground">
       <Table>
         <TableHeader>
           <TableRow>

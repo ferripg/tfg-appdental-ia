@@ -523,7 +523,7 @@ export function ImportWizard({ tipus, proveidors }: Props) {
       {/* Taula de revisió. min-w evita que les columnes s'esclafin: si no hi
           cap, apareix scroll horitzontal (mateix criteri que la resta de
           taules del repo a tauleta). */}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div className="overflow-x-auto border-t border-foreground">
         <Table className="min-w-[1160px]">
           <TableHeader>
             <TableRow>
