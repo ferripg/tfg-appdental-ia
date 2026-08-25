@@ -52,3 +52,9 @@ next-env.d.ts
 # Captures intermèdies dels PDFs "escanejats" (regenerables des dels .html
 # de test-fixtures/scans-src amb un navegador; els PDFs sí que es versionen)
 test-fixtures/scans-src/*.png
+
+# Remapeig local de ports per conviure amb el repo manual (vegeu README)
+docker-compose.override.yml
+
+# Workspaces personals de VS Code
+*.code-workspace
