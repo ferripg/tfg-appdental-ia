@@ -1,19 +1,20 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NotFoundError } from "@/domain/errors";
 import { potGestionarDomini } from "@/domain/permissions";
 import { currentRole } from "@/services/auth-service";
 import { proveidorsService } from "@/services/proveidors-service";
-import { SetActiuButton } from "../_components/desactivar-button";
 import { ProveidorForm } from "../_components/proveidor-form";
 import { PROVEIDORS_TOAST_MAP } from "../_components/toast-map";
-import { setActiuAction, updateProveidorAction } from "./actions";
+import { updateProveidorAction } from "./actions";
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ msg?: string | string[] }>;
+type SearchParams = Promise<{ msg?: string | string[]; mode?: string }>;
 
 export default async function ProveidorDetailPage({
   params,
@@ -23,7 +24,7 @@ export default async function ProveidorDetailPage({
   searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const { msg } = await searchParams;
+  const { msg, mode } = await searchParams;
 
   let proveidor;
   try {
@@ -34,7 +35,10 @@ export default async function ProveidorDetailPage({
   }
 
   // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  // La fitxa s'obre sempre en mode consulta; l'edició és un pas explícit
+  // (?mode=edita) via el botó «Edita», mai l'estat per defecte.
   const canEdit = potGestionarDomini(await currentRole());
+  const editant = canEdit && mode === "edita";
   const updateAction = updateProveidorAction.bind(null, id);
 
   return (
@@ -57,6 +61,14 @@ export default async function ProveidorDetailPage({
             <Badge variant="secondary" className="text-muted-foreground">
               Desactivat
             </Badge>
+          )}
+          {canEdit && !editant && (
+            <Button asChild className="ms-auto">
+              <Link href={`/proveidors/${proveidor.id}?mode=edita`}>
+                <Pencil className="size-4" />
+                Edita
+              </Link>
+            </Button>
           )}
         </div>
         <p className="font-mono text-sm text-muted-foreground">
@@ -87,28 +99,9 @@ export default async function ProveidorDetailPage({
           notes: proveidor.notes ?? "",
         }}
         submitLabel="Desa els canvis"
-        cancelHref="/proveidors"
-        readOnly={!canEdit}
+        cancelHref={editant ? `/proveidors/${proveidor.id}` : "/proveidors"}
+        readOnly={!editant}
       />
-
-      {canEdit && (
-        <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-          <h2 className="text-xl">Estat del proveïdor</h2>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Desactivar el proveïdor el treu dels llistats per defecte però
-            manté tot el seu històric de despeses i inventari intacte. Sempre
-            pots reactivar-lo més endavant.
-          </p>
-          <div>
-            <SetActiuButton
-              id={proveidor.id}
-              nom={proveidor.nom}
-              actiu={proveidor.actiu}
-              action={setActiuAction}
-            />
-          </div>
-        </section>
-      )}
     </div>
   );
 }

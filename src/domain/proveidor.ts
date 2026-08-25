@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isValidIBAN } from "./validators/iban";
-import { isValidNIF } from "./validators/nif";
+import { isValidNIF, normalitzaNIF } from "./validators/nif";
 
 /** Coerce empty strings / undefined into `null` for nullable text fields. */
 const optionalText = (max: number) =>
@@ -47,7 +47,10 @@ export const proveidorInputSchema = z.object({
     .string()
     .trim()
     .min(1, { error: "El NIF és obligatori" })
-    .transform((v) => v.toUpperCase().replace(/[\s-]/g, ""))
+    // normalitzaNIF també treu el prefix «ES» del NIF-IVA: així es DESA el
+    // CIF pelat i la detecció de duplicats per NIF troba el proveïdor
+    // encara que la factura porti el format intracomunitari.
+    .transform(normalitzaNIF)
     .refine(isValidNIF, { error: "NIF no vàlid" }),
   nom: z
     .string()

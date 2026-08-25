@@ -26,6 +26,8 @@ type Props = {
   baixaAction: ActionFn;
   reactivarAction: ActionFn;
   eliminarAction: ActionFn;
+  /** Versió petita per encabir els botons a les files dels llistats. */
+  compact?: boolean;
 };
 
 function ConfirmButton({
@@ -86,11 +88,20 @@ export function EstatButtons({
   baixaAction,
   reactivarAction,
   eliminarAction,
+  compact,
 }: Props) {
   const teAmortitzacions = numAmortitzacions > 0;
+  const size = compact ? "sm" : "default";
+  const iconClass = compact ? "size-3.5" : "size-4";
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div
+      className={
+        compact
+          ? "inline-flex items-center gap-1.5"
+          : "flex flex-wrap items-center gap-3"
+      }
+    >
       {estat === "ACTIU" && (
         <ConfirmButton
           id={id}
@@ -99,8 +110,8 @@ export function EstatButtons({
           description={`«${numInventari}» deixarà d'amortitzar-se a partir d'ara i constarà com a bé de baixa. Sempre el podràs reactivar.`}
           cta="Dona de baixa"
           trigger={
-            <Button variant="outline">
-              <PackageMinus className="size-4" />
+            <Button variant="outline" size={size}>
+              <PackageMinus className={iconClass} />
               Dona de baixa
             </Button>
           }
@@ -115,8 +126,8 @@ export function EstatButtons({
           description={`«${numInventari}» tornarà a estar actiu i s'amortitzarà en els pròxims exercicis.`}
           cta="Reactiva"
           trigger={
-            <Button variant="outline">
-              <ArchiveRestore className="size-4" />
+            <Button variant="outline" size={size}>
+              <ArchiveRestore className={iconClass} />
               Reactiva
             </Button>
           }
@@ -127,11 +138,12 @@ export function EstatButtons({
         (teAmortitzacions ? (
           <Button
             variant="outline"
+            size={size}
             className="text-muted-foreground"
             disabled
             title="Té amortitzacions: retrocedeix-les abans d'eliminar"
           >
-            <Trash2 className="size-4" />
+            <Trash2 className={iconClass} />
             Elimina
           </Button>
         ) : (
@@ -145,9 +157,10 @@ export function EstatButtons({
             trigger={
               <Button
                 variant="outline"
+                size={size}
                 className="text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="size-4" />
+                <Trash2 className={iconClass} />
                 Elimina
               </Button>
             }

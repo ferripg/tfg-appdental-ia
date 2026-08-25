@@ -21,16 +21,22 @@ type Props = {
   id: string;
   label: string;
   action: DeleteFn;
+  /** Versió petita per encabir el botó a les files dels llistats. */
+  compact?: boolean;
 };
 
-export function EliminarDespesaButton({ id, label, action }: Props) {
+export function EliminarDespesaButton({ id, label, action, compact }: Props) {
   const [pending, startTransition] = useTransition();
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" className="text-destructive hover:bg-destructive/10">
-          <Trash2 className="size-4" />
+        <Button
+          variant="outline"
+          size={compact ? "sm" : "default"}
+          className="text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className={compact ? "size-3.5" : "size-4"} />
           Elimina
         </Button>
       </AlertDialogTrigger>

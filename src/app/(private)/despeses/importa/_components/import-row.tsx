@@ -19,6 +19,7 @@ import type {
   FacturaExtreta,
   ImportacioMatching,
 } from "@/domain/importacio";
+import { isValidNIF } from "@/domain/validators/nif";
 import { cn } from "@/lib/utils";
 
 /**
@@ -133,6 +134,10 @@ export function validaFila(edit: EditRow, tipus: TipusOption[]): string[] {
     (!edit.provNif.trim() || !edit.provNom.trim())
   ) {
     problemes.push("Completa el proveïdor nou (NIF i nom)");
+  } else if (edit.proveidorSel === "nou" && !isValidNIF(edit.provNif)) {
+    // isValidNIF normalitza internament (majúscules, espais, guions i el
+    // prefix «ES» del NIF-IVA): el mateix criteri que el servidor.
+    problemes.push("El NIF del proveïdor nou no és vàlid");
   }
   if (esFilaAmortitzable(edit, tipus) && edit.proveidorSel === "cap") {
     problemes.push("El tipus és amortitzable: cal proveïdor per generar el bé");

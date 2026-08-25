@@ -1,5 +1,5 @@
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { RowActions } from "@/components/app/row-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -12,6 +12,12 @@ import {
 import { valorNet } from "@/domain/amortitzacio";
 import type { EstatInventari, InventariWithRelations } from "@/domain/inventari";
 import { formatCurrency, formatDate } from "@/lib/format";
+import {
+  baixaInventariAction,
+  eliminarInventariAction,
+  reactivarInventariAction,
+} from "../[id]/actions";
+import { EstatButtons } from "./estat-buttons";
 
 export function EstatBadge({ estat }: { estat: EstatInventari }) {
   if (estat === "ACTIU") {
@@ -35,7 +41,13 @@ export function EstatBadge({ estat }: { estat: EstatInventari }) {
   );
 }
 
-export function InventariTable({ bens }: { bens: InventariWithRelations[] }) {
+export function InventariTable({
+  bens,
+  canEdit,
+}: {
+  bens: InventariWithRelations[];
+  canEdit: boolean;
+}) {
   if (bens.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-card/40 px-6 py-16 text-center">
@@ -77,7 +89,9 @@ export function InventariTable({ bens }: { bens: InventariWithRelations[] }) {
             <TableHead className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
               Estat
             </TableHead>
-            <TableHead className="w-12" />
+            <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Accions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -116,13 +130,22 @@ export function InventariTable({ bens }: { bens: InventariWithRelations[] }) {
                 <EstatBadge estat={b.estat} />
               </TableCell>
               <TableCell className="text-right">
-                <Link
+                <RowActions
                   href={`/inventari/${b.id}`}
-                  aria-label={`Veure detall de ${b.numInventari}`}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  canEdit={canEdit}
+                  label={b.numInventari}
                 >
-                  <ChevronRight className="size-4" />
-                </Link>
+                  <EstatButtons
+                    compact
+                    id={b.id}
+                    numInventari={b.numInventari}
+                    estat={b.estat}
+                    numAmortitzacions={b.numAmortitzacions}
+                    baixaAction={baixaInventariAction}
+                    reactivarAction={reactivarInventariAction}
+                    eliminarAction={eliminarInventariAction}
+                  />
+                </RowActions>
               </TableCell>
             </TableRow>
           ))}

@@ -1,20 +1,21 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NotFoundError } from "@/domain/errors";
 import { nomGrupPGC } from "@/domain/pgc";
 import { potGestionarDomini } from "@/domain/permissions";
 import { currentRole } from "@/services/auth-service";
 import { tipusDespesaService } from "@/services/tipus-despesa-service";
-import { SetActiuButton } from "../_components/desactivar-button";
 import { TIPUS_DESPESA_TOAST_MAP } from "../_components/toast-map";
 import { TipusDespesaForm } from "../_components/tipus-despesa-form";
-import { setActiuAction, updateTipusDespesaAction } from "./actions";
+import { updateTipusDespesaAction } from "./actions";
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ msg?: string | string[] }>;
+type SearchParams = Promise<{ msg?: string | string[]; mode?: string }>;
 
 export default async function TipusDespesaDetailPage({
   params,
@@ -24,7 +25,7 @@ export default async function TipusDespesaDetailPage({
   searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const { msg } = await searchParams;
+  const { msg, mode } = await searchParams;
 
   let tipus;
   try {
@@ -35,7 +36,10 @@ export default async function TipusDespesaDetailPage({
   }
 
   // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  // La fitxa s'obre sempre en mode consulta; l'edició és un pas explícit
+  // (?mode=edita) via el botó «Edita», mai l'estat per defecte.
   const canEdit = potGestionarDomini(await currentRole());
+  const editant = canEdit && mode === "edita";
   const updateAction = updateTipusDespesaAction.bind(null, id);
 
   return (
@@ -60,6 +64,14 @@ export default async function TipusDespesaDetailPage({
             <Badge variant="secondary" className="text-muted-foreground">
               Desactivat
             </Badge>
+          )}
+          {canEdit && !editant && (
+            <Button asChild className="ms-auto">
+              <Link href={`/tipus-despesa/${tipus.id}?mode=edita`}>
+                <Pencil className="size-4" />
+                Edita
+              </Link>
+            </Button>
           )}
         </div>
         <p className="font-mono text-sm text-muted-foreground">
@@ -101,28 +113,9 @@ export default async function TipusDespesaDetailPage({
           concepte: tipus.concepte ?? "",
         }}
         submitLabel="Desa els canvis"
-        cancelHref="/tipus-despesa"
-        readOnly={!canEdit}
+        cancelHref={editant ? `/tipus-despesa/${tipus.id}` : "/tipus-despesa"}
+        readOnly={!editant}
       />
-
-      {canEdit && (
-        <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
-          <h2 className="text-xl">Estat del tipus de despesa</h2>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Desactivar el tipus el treu de les opcions a l&apos;hora de crear
-            noves despeses, però manté intactes totes les despeses ja
-            registrades. Pots reactivar-lo quan vulguis.
-          </p>
-          <div>
-            <SetActiuButton
-              id={tipus.id}
-              descripcio={tipus.descripcio}
-              actiu={tipus.actiu}
-              action={setActiuAction}
-            />
-          </div>
-        </section>
-      )}
     </div>
   );
 }

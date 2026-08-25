@@ -23,9 +23,8 @@ export default async function NovaDespesaPage() {
         </p>
         <h1 className="text-4xl leading-tight md:text-5xl">Nova despesa</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Registra una despesa enllaçant-la a un tipus i, opcionalment, a un
-          proveïdor. Si encara no l&apos;has pagada, deixa la data de
-          pagament buida.
+          Registra una despesa enllaçant-la a un tipus i a un proveïdor. Si
+          encara no l&apos;has pagada, deixa la data de pagament buida.
         </p>
       </div>
 
@@ -36,6 +35,7 @@ export default async function NovaDespesaPage() {
         cancelHref="/despeses"
         tipus={tipus}
         proveidors={proveidors}
+        ambFactura
       />
     </div>
   );

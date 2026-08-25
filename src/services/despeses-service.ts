@@ -124,6 +124,49 @@ export const despesesService = {
     return created;
   },
 
+  /**
+   * Alta amb factura adjunta opcional en un sol pas. El fitxer es valida
+   * ABANS de crear la despesa, perquè un PDF invàlid no deixi una despesa
+   * òrfena; en canvi, si la pujada a MinIO falla DESPRÉS de crear, la
+   * despesa es conserva sense factura (es pot adjuntar més tard des de la
+   * fitxa) — no bloquegem l'alta per un error d'emmagatzematge.
+   *
+   * Permisos: adjuntar en el moment de l'alta forma part de «crear
+   * despeses» (permès a tots els rols via requireSession dins de create);
+   * modificar la factura d'una despesa EXISTENT queda per a MANAGER+ via
+   * uploadInvoice/deleteInvoice.
+   */
+  async createAmbFactura(input: unknown, file: unknown) {
+    let factura: File | null = null;
+    if (file instanceof File && file.size > 0) {
+      const parsed = invoiceFileSchema.safeParse(file);
+      if (!parsed.success) {
+        throw new ValidationError("Hi ha errors al formulari", {
+          factura: parsed.error.issues.map((i) => i.message),
+        });
+      }
+      factura = parsed.data;
+    }
+
+    const created = await despesesService.create(input);
+
+    if (factura) {
+      try {
+        const key = fitxerKeyFor(created.id);
+        const buffer = Buffer.from(await factura.arrayBuffer());
+        await facturesRepository.upload(key, buffer, "application/pdf");
+        await despesesRepository.setFitxerKey(created.id, key);
+      } catch (err) {
+        console.error(
+          `[despesesService.createAmbFactura] pujada de la factura de ${created.id} ha fallat:`,
+          err,
+        );
+      }
+    }
+
+    return created;
+  },
+
   async update(id: string, input: unknown) {
     const session = await requireManager();
     const current = await despesesRepository.findById(id);

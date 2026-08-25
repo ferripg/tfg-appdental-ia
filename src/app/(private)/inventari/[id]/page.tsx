@@ -1,7 +1,9 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
+import { Button } from "@/components/ui/button";
 import { NotFoundError } from "@/domain/errors";
 import { valorNet } from "@/domain/amortitzacio";
 import { potGestionarDomini } from "@/domain/permissions";
@@ -21,7 +23,7 @@ import {
 } from "./actions";
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ msg?: string | string[] }>;
+type SearchParams = Promise<{ msg?: string | string[]; mode?: string }>;
 
 function toDateInput(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -35,7 +37,7 @@ export default async function InventariDetailPage({
   searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const { msg } = await searchParams;
+  const { msg, mode } = await searchParams;
 
   let be;
   try {
@@ -48,7 +50,10 @@ export default async function InventariDetailPage({
   const proveidors = await proveidorsService.list({ includeInactius: false });
   const locked = be.numAmortitzacions > 0;
   // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  // La fitxa s'obre sempre en mode consulta; l'edició és un pas explícit
+  // (?mode=edita) via el botó «Edita», mai l'estat per defecte.
   const canEdit = potGestionarDomini(await currentRole());
+  const editant = canEdit && mode === "edita";
   const updateAction = updateInventariAction.bind(null, id);
 
   return (
@@ -66,6 +71,14 @@ export default async function InventariDetailPage({
             {be.numInventari}
           </h1>
           <EstatBadge estat={be.estat} />
+          {canEdit && !editant && (
+            <Button asChild className="ms-auto">
+              <Link href={`/inventari/${be.id}?mode=edita`}>
+                <Pencil className="size-4" />
+                Edita
+              </Link>
+            </Button>
+          )}
         </div>
         <p className="text-lg">{be.descripcio}</p>
         <p className="font-mono text-sm text-muted-foreground">
@@ -116,10 +129,10 @@ export default async function InventariDetailPage({
         }}
         proveidors={proveidors}
         locked={locked}
-        readOnly={!canEdit}
+        readOnly={!editant}
       />
 
-      {canEdit && (
+      {editant && (
         <section className="space-y-3 rounded-lg border border-border bg-card/60 p-5">
           <h2 className="text-xl">Estat del bé</h2>
           <p className="max-w-2xl text-sm text-muted-foreground">

@@ -46,6 +46,9 @@ type Props = {
   proveidors: Array<{ id: string; nif: string; nom: string }>;
   /** Mode consulta (només lectura): desactiva tots els camps i amaga el desat. */
   readOnly?: boolean;
+  /** Mostra el camp de PDF de factura (només a l'alta; a la fitxa la factura
+   *  es gestiona des de la secció «Factura adjunta»). */
+  ambFactura?: boolean;
 };
 
 function FieldError({ messages }: { messages?: string[] }) {
@@ -68,6 +71,7 @@ export function DespesaForm({
   tipus,
   proveidors,
   readOnly = false,
+  ambFactura = false,
 }: Props) {
   const [state, formAction, pending] = useActionState<
     DespesaFormState,
@@ -134,8 +138,8 @@ export function DespesaForm({
         <CardHeader>
           <CardTitle className="text-xl">Concepte</CardTitle>
           <CardDescription>
-            Tipus de despesa, proveïdor, import i descripció. El tipus,
-            l&apos;import i la descripció són obligatoris.
+            Tipus de despesa, proveïdor, import i descripció — tots quatre
+            obligatoris.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-5 md:grid-cols-2">
@@ -165,10 +169,13 @@ export function DespesaForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="proveidorId">Proveïdor</Label>
+            <Label htmlFor="proveidorId">
+              Proveïdor <span className="text-destructive">*</span>
+            </Label>
             <select
               id="proveidorId"
               name="proveidorId"
+              required
               defaultValue={defaults.proveidorId}
               className={cn(
                 SELECT_CLASS,
@@ -176,7 +183,7 @@ export function DespesaForm({
               )}
               aria-invalid={!!fe.proveidorId}
             >
-              <option value="">— Sense proveïdor —</option>
+              <option value="">— Selecciona un proveïdor —</option>
               {proveidors.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nom} · {p.nif}
@@ -224,6 +231,39 @@ export function DespesaForm({
             <FieldError messages={fe.descripcio} />
           </div>
         </CardContent>
+
+        {ambFactura && (
+          <>
+            <Separator />
+
+            <CardHeader>
+              <CardTitle className="text-xl">Factura adjunta</CardTitle>
+              <CardDescription>
+                Opcional — PDF de màxim 5 MB. També la pots adjuntar més
+                endavant des de la fitxa de la despesa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1.5">
+                <Label htmlFor="factura" className="sr-only">
+                  PDF de la factura
+                </Label>
+                <Input
+                  id="factura"
+                  name="factura"
+                  type="file"
+                  accept="application/pdf"
+                  className={cn(
+                    "cursor-pointer file:cursor-pointer file:font-medium",
+                    fe.factura && "border-destructive",
+                  )}
+                  aria-invalid={!!fe.factura}
+                />
+                <FieldError messages={fe.factura} />
+              </div>
+            </CardContent>
+          </>
+        )}
       </Card>
       </fieldset>
 

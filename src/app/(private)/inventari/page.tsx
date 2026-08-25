@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ResultToast } from "@/components/app/result-toast";
 import { Button } from "@/components/ui/button";
 import type { EstatInventari } from "@/domain/inventari";
+import { potGestionarDomini } from "@/domain/permissions";
+import { currentRole } from "@/services/auth-service";
 import { inventariService } from "@/services/inventari-service";
 import { proveidorsService } from "@/services/proveidors-service";
 import { InventariFilters } from "./_components/inventari-filters";
@@ -36,6 +38,7 @@ export default async function InventariPage({
     inventariService.list({ search, proveidorId, estat, includeEliminats }),
     proveidorsService.list({ includeInactius: false }),
   ]);
+  const canManage = potGestionarDomini(await currentRole());
 
   return (
     <div className="space-y-8">
@@ -69,7 +72,7 @@ export default async function InventariPage({
         proveidors={proveidors}
       />
 
-      <InventariTable bens={bens} />
+      <InventariTable bens={bens} canEdit={canManage} />
     </div>
   );
 }

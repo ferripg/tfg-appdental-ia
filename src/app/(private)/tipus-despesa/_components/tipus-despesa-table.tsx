@@ -1,5 +1,5 @@
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { RowActions } from "@/components/app/row-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/table";
 import { nomGrupPGC } from "@/domain/pgc";
 import type { TipusDespesaWithCount } from "@/domain/tipus-despesa";
+import { setActiuAction } from "../[id]/actions";
+import { SetActiuButton } from "./desactivar-button";
 
 function YesNoBadge({ value }: { value: boolean }) {
   return value ? (
@@ -26,8 +28,10 @@ function YesNoBadge({ value }: { value: boolean }) {
 
 export function TipusDespesaTable({
   tipus,
+  canEdit,
 }: {
   tipus: TipusDespesaWithCount[];
+  canEdit: boolean;
 }) {
   if (tipus.length === 0) {
     return (
@@ -65,7 +69,9 @@ export function TipusDespesaTable({
             <TableHead className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
               Despeses
             </TableHead>
-            <TableHead className="w-12" />
+            <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Accions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -107,13 +113,19 @@ export function TipusDespesaTable({
                 {t._count.despeses}
               </TableCell>
               <TableCell className="text-right">
-                <Link
+                <RowActions
                   href={`/tipus-despesa/${t.id}`}
-                  aria-label={`Veure detall de ${t.descripcio}`}
-                  className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  canEdit={canEdit}
+                  label={t.descripcio}
                 >
-                  <ChevronRight className="size-4" />
-                </Link>
+                  <SetActiuButton
+                    compact
+                    id={t.id}
+                    descripcio={t.descripcio}
+                    actiu={t.actiu}
+                    action={setActiuAction}
+                  />
+                </RowActions>
               </TableCell>
             </TableRow>
           ))}

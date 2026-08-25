@@ -1,8 +1,10 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModeConsultaBanner } from "@/components/app/mode-consulta-banner";
 import { ResultToast } from "@/components/app/result-toast";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NotFoundError } from "@/domain/errors";
 import { potGestionarDomini } from "@/domain/permissions";
 import { currentRole } from "@/services/auth-service";
@@ -22,7 +24,7 @@ import {
 } from "./actions";
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ msg?: string | string[] }>;
+type SearchParams = Promise<{ msg?: string | string[]; mode?: string }>;
 
 function toDateInput(d: Date | null): string {
   if (!d) return "";
@@ -37,7 +39,7 @@ export default async function DespesaDetailPage({
   searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const { msg } = await searchParams;
+  const { msg, mode } = await searchParams;
 
   let despesa;
   try {
@@ -54,7 +56,10 @@ export default async function DespesaDetailPage({
   ]);
 
   // RBAC: OPERARI consulta en només lectura; MANAGER/ADMIN poden editar.
+  // La fitxa s'obre sempre en mode consulta; l'edició és un pas explícit
+  // (?mode=edita) via el botó «Edita», mai l'estat per defecte.
   const canEdit = potGestionarDomini(await currentRole());
+  const editant = canEdit && mode === "edita";
 
   const updateAction = updateDespesaAction.bind(null, id);
   const uploadAction = uploadInvoiceAction.bind(null, id);
@@ -83,6 +88,14 @@ export default async function DespesaDetailPage({
               Pendent de pagament
             </Badge>
           )}
+          {canEdit && !editant && (
+            <Button asChild className="ms-auto">
+              <Link href={`/despeses/${despesa.id}?mode=edita`}>
+                <Pencil className="size-4" />
+                Edita
+              </Link>
+            </Button>
+          )}
         </div>
         <p className="font-mono text-sm text-muted-foreground">
           {formatDate(despesa.dataFactura)}
@@ -103,7 +116,7 @@ export default async function DespesaDetailPage({
         downloadUrl={downloadUrl}
         uploadAction={uploadAction}
         deleteAction={removeFactura}
-        canEdit={canEdit}
+        canEdit={editant}
       />
 
       <DespesaForm
@@ -118,13 +131,13 @@ export default async function DespesaDetailPage({
           proveidorId: despesa.proveidorId ?? "",
         }}
         submitLabel="Desa els canvis"
-        cancelHref="/despeses"
+        cancelHref={editant ? `/despeses/${despesa.id}` : "/despeses"}
         tipus={tipus}
         proveidors={proveidors}
-        readOnly={!canEdit}
+        readOnly={!editant}
       />
 
-      {canEdit && (
+      {editant && (
         <section className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-5">
           <h2 className="text-xl">Zona perillosa</h2>
           <p className="max-w-2xl text-sm text-muted-foreground">

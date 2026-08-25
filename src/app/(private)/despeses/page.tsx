@@ -76,9 +76,9 @@ export default async function DespesesPage({
           </p>
           <h1 className="text-4xl leading-tight md:text-5xl">Despeses</h1>
           <p className="max-w-2xl text-muted-foreground">
-            Registre fiscal de despeses. Cada moviment està associat a un
-            tipus i, opcionalment, a un proveïdor; les dates de factura i de
-            pagament permeten distingir-ne l&apos;estat fiscal.
+            Registre de despeses de la clínica. Cada despesa s&apos;enllaça a
+            un tipus i a un proveïdor; si no té data de pagament, consta com
+            a pendent.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -112,7 +112,7 @@ export default async function DespesesPage({
         proveidors={proveidors}
       />
 
-      <DespesesTable despeses={despeses} />
+      <DespesesTable despeses={despeses} canEdit={potGestionarDomini(role)} />
     </div>
   );
 }

@@ -60,7 +60,7 @@ export default async function TipusDespesaPage({
         includeInactius={includeInactius}
       />
 
-      <TipusDespesaTable tipus={tipus} />
+      <TipusDespesaTable tipus={tipus} canEdit={canManage} />
     </div>
   );
 }

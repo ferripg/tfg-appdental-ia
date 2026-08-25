@@ -22,9 +22,11 @@ type Props = {
   nom: string;
   actiu: boolean;
   action: SetActiuFn;
+  /** Versió petita per encabir el botó a les files dels llistats. */
+  compact?: boolean;
 };
 
-export function SetActiuButton({ id, nom, actiu, action }: Props) {
+export function SetActiuButton({ id, nom, actiu, action, compact }: Props) {
   const [pending, startTransition] = useTransition();
   const target = !actiu;
 
@@ -37,7 +39,11 @@ export function SetActiuButton({ id, nom, actiu, action }: Props) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant={actiu ? "outline" : "default"} suppressHydrationWarning>
+        <Button
+          variant={actiu ? "outline" : "default"}
+          size={compact ? "sm" : "default"}
+          suppressHydrationWarning
+        >
           {actiu ? "Desactivar" : "Reactivar"}
         </Button>
       </AlertDialogTrigger>

@@ -73,11 +73,15 @@ const styles = StyleSheet.create({
     borderTopColor: "#1a1a1a",
     fontSize: 12,
   },
-  cData: { width: 64 },
-  cFactura: { width: 84 },
-  cConcepte: { flexGrow: 1, flexShrink: 1, paddingRight: 6 },
-  cTipus: { width: 60 },
-  cImport: { width: 72, textAlign: "right" },
+  // Columnes fixes amb flexShrink: 0 (que el concepte llarg no les aixafi) i
+  // el concepte amb flexBasis: 0 — l'amplada li ve del repartiment flex, no
+  // de l'amplada intrínseca del text, i així el text llarg SALTA DE LÍNIA
+  // dins de la seva columna en lloc de trepitjar Tipus i Import.
+  cData: { width: 56, flexShrink: 0, paddingRight: 4 },
+  cFactura: { width: 78, flexShrink: 0, paddingRight: 4 },
+  cConcepte: { flexGrow: 1, flexShrink: 1, flexBasis: 0, paddingRight: 6 },
+  cTipus: { width: 44, flexShrink: 0 },
+  cImport: { width: 64, textAlign: "right", flexShrink: 0 },
   buit: { fontSize: 11, color: "#555", marginTop: 24 },
   footer: {
     position: "absolute",
@@ -99,6 +103,17 @@ type Props = {
   des: Date;
   fins: Date;
 };
+
+/**
+ * Data compacta (15/01/2026) per a les files: la forma llarga de formatDate
+ * («15 de gen. 2026») no cap a la columna i es partia en dues línies.
+ */
+const dataCurta = new Intl.DateTimeFormat("ca-ES", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "UTC",
+});
 
 export function InformePDF({ informe, des, fins }: Props) {
   const periodeText = `Període: ${formatDate(des)} – ${formatDate(fins)}`;
@@ -144,7 +159,9 @@ export function InformePDF({ informe, des, fins }: Props) {
 
               {grup.linies.map((l) => (
                 <View key={l.id} style={styles.row} wrap={false}>
-                  <Text style={styles.cData}>{formatDate(l.dataFactura)}</Text>
+                  <Text style={styles.cData}>
+                    {dataCurta.format(l.dataFactura)}
+                  </Text>
                   <Text style={styles.cFactura}>{l.numFactura ?? "—"}</Text>
                   <Text style={styles.cConcepte}>{l.descripcio}</Text>
                   <Text style={styles.cTipus}>{l.tipusCodi}</Text>

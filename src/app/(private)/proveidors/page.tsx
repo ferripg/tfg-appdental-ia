@@ -55,7 +55,7 @@ export default async function ProveidorsPage({
 
       <ProveidorsFilters search={search} includeInactius={includeInactius} />
 
-      <ProveidorsTable proveidors={proveidors} />
+      <ProveidorsTable proveidors={proveidors} canEdit={canManage} />
     </div>
   );
 }

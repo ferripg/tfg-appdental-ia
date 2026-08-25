@@ -51,12 +51,6 @@ const importPositive = z
     error: "L'import ha de ser superior a 0",
   });
 
-const optionalCuid = z
-  .string()
-  .optional()
-  .or(z.literal(""))
-  .transform((v) => (v ? v : null));
-
 export const despesaInputSchema = z.object({
   dataFactura: dateRequired,
   dataPagament: dateOptional,
@@ -73,15 +67,21 @@ export const despesaInputSchema = z.object({
   tipusDespesaId: z
     .string()
     .min(1, { error: "Selecciona un tipus de despesa" }),
-  proveidorId: optionalCuid,
+  // El proveïdor és OBLIGATORI: tota despesa s'associa al seu emissor. Les
+  // despeses antigues sense proveïdor es conserven tal qual, però en
+  // editar-les caldrà assignar-ne un.
+  proveidorId: z.string().min(1, { error: "Selecciona un proveïdor" }),
 });
 
 /** Validated input ready for persistence (no id, no timestamps, no userId). */
 export type DespesaInput = z.output<typeof despesaInputSchema>;
 
 /** Full domain entity (without joins). */
-export type Despesa = DespesaInput & {
+export type Despesa = Omit<DespesaInput, "proveidorId"> & {
   id: string;
+  // Al model de LECTURA el proveïdor segueix sent nullable: les despeses
+  // anteriors a l'obligatorietat poden no tenir-ne. Només l'ENTRADA l'exigeix.
+  proveidorId: string | null;
   fitxerKey: string | null;
   userId: string;
   createdAt: Date;

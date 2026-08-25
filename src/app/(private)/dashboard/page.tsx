@@ -142,7 +142,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Despeses per tipus</CardTitle>
-            <CardDescription>Desglossament per categoria fiscal.</CardDescription>
+            <CardDescription>Desglossament per tipus de despesa.</CardDescription>
           </CardHeader>
           <CardContent>
             {resum.perTipus.length === 0 ? (

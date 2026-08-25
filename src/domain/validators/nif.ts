@@ -53,9 +53,23 @@ function checksumCif(value: string): boolean {
   return control === String(controlDigit) || control === controlLetter;
 }
 
+/**
+ * Normalitza un NIF tal com es desa a la BD: majúscules, sense espais ni
+ * guions, i sense el prefix de país «ES» del NIF-IVA intracomunitari (les
+ * factures sovint porten «ESA08820953» on el CIF és «A08820953»). Treure'l
+ * és segur: cap NIF/NIE/CIF espanyol vàlid té 11 caràcters ni comença per
+ * «ES» seguit de lletra o de 9 caràcters més.
+ */
+export function normalitzaNIF(input: string): string {
+  const value = input.trim().toUpperCase().replace(/[\s-]/g, "");
+  return value.length === 11 && value.startsWith("ES")
+    ? value.slice(2)
+    : value;
+}
+
 export function isValidNIF(input: string): boolean {
   if (!input) return false;
-  const value = input.trim().toUpperCase().replace(/[\s-]/g, "");
+  const value = normalitzaNIF(input);
 
   // DNI: 8 digits + 1 letter.
   if (/^\d{8}[A-Z]$/.test(value)) return checksumDniNie(value);

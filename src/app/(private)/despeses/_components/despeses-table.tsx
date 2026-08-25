@@ -1,5 +1,5 @@
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { RowActions } from "@/components/app/row-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -11,11 +11,15 @@ import {
 } from "@/components/ui/table";
 import type { DespesaWithRelations } from "@/domain/despesa";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { deleteDespesaAction } from "../[id]/actions";
+import { EliminarDespesaButton } from "./eliminar-button";
 
 export function DespesesTable({
   despeses,
+  canEdit,
 }: {
   despeses: DespesaWithRelations[];
+  canEdit: boolean;
 }) {
   if (despeses.length === 0) {
     return (
@@ -50,7 +54,9 @@ export function DespesesTable({
             <TableHead className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
               Pagament
             </TableHead>
-            <TableHead className="w-12" />
+            <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Accions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -98,13 +104,18 @@ export function DespesesTable({
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <Link
+                <RowActions
                   href={`/despeses/${d.id}`}
-                  aria-label="Veure detall de la despesa"
-                  className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  canEdit={canEdit}
+                  label={`la despesa ${d.numFactura ?? formatDate(d.dataFactura)}`}
                 >
-                  <ChevronRight className="size-4" />
-                </Link>
+                  <EliminarDespesaButton
+                    compact
+                    id={d.id}
+                    label={`${d.tipusDespesa.codi} · ${formatCurrency(d.import)}`}
+                    action={deleteDespesaAction}
+                  />
+                </RowActions>
               </TableCell>
             </TableRow>
           ))}

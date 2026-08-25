@@ -12,7 +12,14 @@ export async function createDespesaAction(
 ): Promise<DespesaFormState> {
   let createdId: string;
   try {
-    const created = await despesesService.create(Object.fromEntries(formData));
+    // El fitxer se separa de la resta de camps: el schema de la despesa no
+    // l'ha de veure, i el servei el valida i el puja a MinIO a part.
+    const factura = formData.get("factura");
+    formData.delete("factura");
+    const created = await despesesService.createAmbFactura(
+      Object.fromEntries(formData),
+      factura,
+    );
     createdId = created.id;
   } catch (err) {
     if (err instanceof DomainError) {

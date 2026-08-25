@@ -52,7 +52,23 @@ export async function confirmaImportacioAction(
     revalidatePath("/dashboard");
     return { resum };
   } catch (err) {
-    if (err instanceof DomainError) return { error: err.message };
+    if (err instanceof DomainError) {
+      // La ValidationError del servei porta el detall agrupat per índex de
+      // fila ("0" → ["NIF no vàlid"]). El traduïm a nom de fitxer perquè el
+      // toast digui exactament quina fila i quin motiu, no un genèric.
+      let error = err.message;
+      if (err.fieldErrors && Array.isArray(rows)) {
+        const detalls = Object.entries(err.fieldErrors)
+          .slice(0, 5)
+          .map(([clau, motius]) => {
+            const fila = rows[Number(clau)] as { nomFitxer?: string } | undefined;
+            const nom = fila?.nomFitxer ?? `fila ${clau}`;
+            return `${nom}: ${motius.join(", ")}`;
+          });
+        if (detalls.length) error = `${err.message} — ${detalls.join(" · ")}`;
+      }
+      return { error };
+    }
     console.error("[confirmaImportacioAction] error inesperat:", err);
     return { error: "Error inesperat. Torna-ho a provar més tard." };
   }
