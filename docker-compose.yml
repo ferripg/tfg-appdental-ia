@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. Servidor Web (Reverse Proxy)
   nginx:
@@ -28,8 +26,15 @@ services:
       - MINIO_USE_SSL=false
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      # Adreça de MinIO tal com la veu el NAVEGADOR (per a les URL signades de
+      # descàrrega). Si canvies el port publicat del S3 (p. ex. amb un
+      # docker-compose.override.yml), posa el mateix valor a MINIO_PORT del .env.
+      - MINIO_PUBLIC_ENDPOINT=localhost
+      - MINIO_PUBLIC_PORT=${MINIO_PORT:-9000}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=http://localhost
+      # Importació de factures amb IA (opcional; sense clau la resta de l'app funciona)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

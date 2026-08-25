@@ -194,25 +194,19 @@ Aquesta comanda executa `prisma/seed.ts` (mitjançant `npx tsx`, que es descarre
 
 ### 6. (Opcional) Carregar dades de demostració
 
-`prisma/seed-demo.sql` afegeix tipus de despesa, proveïdors, despeses de dos exercicis, béns d'inventari i amortitzacions, perquè el tauler i els informes tinguin contingut. Les despeses queden associades a l'usuari administrador, així que primer cal substituir l'identificador que hi ha al fitxer pel del teu admin.
+`prisma/seed-demo.sql` afegeix tipus de despesa, proveïdors, despeses de dos exercicis, béns d'inventari i amortitzacions, perquè el tauler i els informes tinguin contingut. Les despeses s'assignen automàticament a l'usuari `ADMIN` creat al pas anterior (si no n'hi ha cap, el script s'atura amb un missatge clar).
 
 **Bash / Git Bash:**
 
 ```bash
-ADMIN_ID=$(echo "SELECT id FROM \"User\" WHERE role='ADMIN' LIMIT 1" \
-  | docker exec -i dentaia-postgres psql -U appdental -d appdental -tA)
-sed "s/ovW6kDPSR5eLodD2tby8dHvo0QAfLCeA/$ADMIN_ID/g" prisma/seed-demo.sql \
-  | docker exec -i dentaia-postgres psql -U appdental -d appdental
+docker exec -i dentaia-postgres psql -U appdental -d appdental < prisma/seed-demo.sql
 ```
 
 **PowerShell:**
 
 ```powershell
 $OutputEncoding = New-Object System.Text.UTF8Encoding $false   # perquè els accents arribin bé a psql
-$adminId = ('SELECT id FROM "User" WHERE role=''ADMIN'' LIMIT 1' `
-  | docker exec -i dentaia-postgres psql -U appdental -d appdental -tA).Trim()
-(Get-Content prisma\seed-demo.sql -Raw -Encoding UTF8) -replace 'ovW6kDPSR5eLodD2tby8dHvo0QAfLCeA', $adminId `
-  | docker exec -i dentaia-postgres psql -U appdental -d appdental
+Get-Content prisma\seed-demo.sql -Raw -Encoding UTF8 | docker exec -i dentaia-postgres psql -U appdental -d appdental
 ```
 
 El script és idempotent (`ON CONFLICT DO NOTHING`) i acaba mostrant el recompte de files de cada taula.
@@ -282,12 +276,14 @@ docker compose up -d --build
 | Aplicació | http://localhost |
 | Consola MinIO | http://localhost/minio/ o http://localhost:9001 |
 
-Les migracions **no** s'apliquen automàticament dins del contenidor: executa-les des de l'ordinador amb `npx prisma migrate deploy` (el Postgres continua exposat a `localhost:5432`) i després el seed, tal com s'ha descrit abans.
+Les migracions i els seeds **no** s'executen automàticament dins del contenidor: fes-ho des de l'ordinador amb els passos 4, 5 i 6 de l'apartat anterior (el Postgres continua exposat a `localhost:5432`). Si els havies fet ja per al mode `npm run dev`, no cal repetir-los: la base de dades és la mateixa.
 
-Limitacions conegudes d'aquest mode (l'app està pensada per córrer al host durant el TFG):
+Com es configura el contenidor (`docker-compose.yml`, servei `nextjs`):
 
-- El contenidor `nextjs` **no rep `ANTHROPIC_API_KEY`**; per activar la importació IA cal afegir `- ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}` al bloc `environment` del servei `nextjs`.
-- Les URL signades de descàrrega de factures es generen contra `minio:9000` (nom intern de la xarxa Docker), que el navegador no resol. Cal un segon client MinIO "públic" per resoldre-ho.
+- `DATABASE_URL` i `MINIO_ENDPOINT=minio` apunten als noms interns de la xarxa Docker.
+- `MINIO_PUBLIC_ENDPOINT=localhost` / `MINIO_PUBLIC_PORT` és l'adreça que veu el **navegador**: les URL signades de descàrrega de factures es generen contra aquesta adreça, no contra `minio:9000`.
+- `ANTHROPIC_API_KEY` s'hi passa des del `.env` (buida si no la tens; la resta de l'app funciona igual).
+- `BETTER_AUTH_URL=http://localhost` perquè l'app es serveix pel port 80 de Nginx.
 
 Per aturar-ho tot conservant les dades (volums `postgres_data` i `minio_data`):
 
@@ -346,7 +342,8 @@ Per tornar als ports per defecte, esborra el fitxer o executa Compose amb `-f do
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Sí | Credencials del contenidor Postgres. Compose les usa també per construir la `DATABASE_URL` interna. |
 | `DATABASE_URL` | Sí | URL que fa servir Prisma des de l'host. Ha d'apuntar a `localhost:5432` (o `5433` amb l'override) amb les mateixes credencials. |
 | `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | Sí | Credencials de MinIO. L'app les fa servir com a *access/secret key* si no hi ha `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`. |
-| `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL` | No | Per defecte `localhost`, `9000`, `false`. Compose injecta `minio` / `9000` al contenidor. |
+| `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL` | No | Adreça de MinIO per al servidor. Per defecte `localhost`, `9000`, `false`. Compose injecta `minio` / `9000` al contenidor. |
+| `MINIO_PUBLIC_ENDPOINT`, `MINIO_PUBLIC_PORT`, `MINIO_PUBLIC_USE_SSL` | No | Adreça de MinIO per al navegador (URL signades). Per defecte, la mateixa que l'anterior; Compose injecta `localhost` / `${MINIO_PORT:-9000}`. |
 | `BETTER_AUTH_SECRET` | Sí | Clau de signatura de sessions. Cadena aleatòria llarga. |
 | `BETTER_AUTH_URL` | Sí | URL pública de l'app: `http://localhost:3000` en dev; Compose injecta `http://localhost` al contenidor. |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Per al seed | Credencials del primer administrador que crea `npx prisma db seed`. |
@@ -419,6 +416,10 @@ Si canvies `schema.prisma`, no editis migracions existents: crea'n una de nova. 
 **`P1001: Can't reach database server`** — el contenidor de Postgres no està aixecat o `DATABASE_URL` apunta a un port equivocat (recorda el `5433` si tens l'override). Comprova-ho amb `docker compose ps`.
 
 **`Missing SEED_ADMIN_EMAIL or SEED_ADMIN_PASSWORD`** — falten aquestes variables al `.env`. El seed no crea cap usuari sense elles.
+
+**`No hi ha cap usuari ADMIN`** en carregar `seed-demo.sql` — executa primer `npx prisma db seed`.
+
+**La descàrrega d'una factura no obre / apunta a `minio:9000`** — en mode Docker complet, `MINIO_PUBLIC_ENDPOINT`/`MINIO_PUBLIC_PORT` del servei `nextjs` han de ser l'adreça de MinIO publicada a l'host (per defecte `localhost:9000`).
 
 **MinIO no arrenca / es reinicia** — `MINIO_ROOT_PASSWORD` ha de tenir com a mínim 8 caràcters.
 

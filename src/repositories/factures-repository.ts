@@ -1,4 +1,9 @@
-import { BUCKET, ensureFacturesBucket, minioClient } from "./minio-client";
+import {
+  BUCKET,
+  ensureFacturesBucket,
+  minioClient,
+  minioPublicClient,
+} from "./minio-client";
 
 const PRESIGNED_EXPIRY_SECONDS = 15 * 60;
 
@@ -18,7 +23,12 @@ export const facturesRepository = {
 
   async getDownloadUrl(key: string): Promise<string> {
     await ensureFacturesBucket();
-    return minioClient.presignedGetObject(BUCKET, key, PRESIGNED_EXPIRY_SECONDS);
+    // Signem amb el client PÚBLIC: la URL l'obre el navegador, no el servidor.
+    return minioPublicClient.presignedGetObject(
+      BUCKET,
+      key,
+      PRESIGNED_EXPIRY_SECONDS,
+    );
   },
 
   async remove(key: string): Promise<void> {
