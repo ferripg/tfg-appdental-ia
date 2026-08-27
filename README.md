@@ -433,6 +433,10 @@ Si canvies `schema.prisma`, no editis migracions existents: crea'n una de nova. 
 
 **El port 80 / 5432 / 9000 ja està en ús** — algun altre servei (o el repositori manual) els ocupa. Fes servir l'override de ports descrit més amunt.
 
+**Windows: `npm run dev` peta amb `path length for file ... exceeds max length of filesystem`** — és el límit de 260 caràcters de les rutes de Windows: Turbopack genera fitxers amb noms llargs dins de `.next/` i, si el repositori és en una carpeta profunda (OneDrive, Escriptori\Carpeta\Subcarpeta…), es passa del límit. Clona el repositori en una ruta curta (per exemple `C:\dev\tfg-appdental-ia`) o activa les rutes llargues de Windows (`git config --global core.longpaths true` i la clau `LongPathsEnabled` del registre).
+
+**Windows: `cp: command not found` / `openssl` no existeix** — les comandes del README són de Bash (Git Bash les té totes). A PowerShell fes `Copy-Item .env.example .env` i genera el secret amb `npx @better-auth/cli@latest secret`.
+
 ---
 
 ## Autor
