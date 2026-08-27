@@ -2,14 +2,16 @@
 
 AppDental és una aplicació web per gestionar la part econòmica d'una clínica dental: proveïdors, tipus de despesa, registre de despeses amb la factura adjunta, inventari de béns amortitzables, amortitzacions anuals, informes en PDF, tauler d'indicadors, gestió d'usuaris amb rols i registre d'auditoria.
 
-Aquest repositori és la **branca assistida per IA** d'un Treball de Final de Grau (Universitat de Girona). El mateix producte s'ha desenvolupat dues vegades amb el mateix abast funcional:
+Aquest repositori és la **versió desenvolupada amb Claude Code** d'un Treball de Final de Grau (Universitat de Girona). El mateix producte, amb el mateix abast funcional, s'ha desenvolupat quatre vegades amb metodologies diferents per comparar-les empíricament:
 
 | Repositori | Metodologia |
 |---|---|
-| `tfg-appdental-manual` | Desenvolupament manual, sense assistència agèntica |
-| **`tfg-appdental-ia`** (aquest) | Desenvolupament amb Claude Code (Skills + MCP + agents) com a copilot principal |
+| [`tfg-appdental-manual`](https://github.com/ferripg/tfg-appdental-manual) | Desenvolupament manual, sense assistència agèntica |
+| **[`tfg-appdental-ia`](https://github.com/ferripg/tfg-appdental-ia)** (aquest) | Desenvolupament per sprints amb Claude Code (Claude Fable 5; Skills + MCP + agents) com a agent principal, amb supervisió de l'autor com a *product manager* |
+| [`tfg-appdental-cursor`](https://github.com/ferripg/tfg-appdental-cursor) | Desenvolupament amb l'agent Cursor (GPT-5.5) |
+| [`tfg-appdental-fable-oneshot`](https://github.com/ferripg/tfg-appdental-fable-oneshot) | Generació d'una sola passada (*one-shot*) amb Claude Fable 5 |
 
-La comparativa empírica entre ambdós és l'aportació acadèmica del TFG. Aquest repositori incorpora, a més, funcionalitats exclusives (com la **importació de factures amb IA**).
+La comparativa entre les quatre versions és l'aportació acadèmica del TFG. Aquest repositori incorpora, a més, funcionalitats exclusives (com la **importació de factures amb IA**).
 
 > La interfície, els comentaris i la documentació són en **català**.
 
